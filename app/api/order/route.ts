@@ -8,7 +8,7 @@ export async function GET(req: NextRequest) {
   try {
     const session = await stripe.checkout.sessions.retrieve(sessionId);
     const items = JSON.parse(session.metadata?.items || "[]") as { id: string; type: string }[];
-    const types = [...new Set(items.map((i) => i.type))];
+    const types = Array.from(new Set(items.map((i) => i.type)));
     return NextResponse.json({ types });
   } catch {
     return NextResponse.json({ types: ["product"] });
