@@ -25,14 +25,20 @@ export async function POST(req: NextRequest) {
   if (event.type === "checkout.session.completed") {
     const session = event.data.object as Stripe.Checkout.Session;
 
+    console.log(`[WEBHOOK] checkout.session.completed — session: ${session.id}`);
+    console.log(`[WEBHOOK] RESEND_API_KEY présent: ${!!process.env.RESEND_API_KEY}`);
+    console.log(`[WEBHOOK] RESEND_FROM: ${process.env.RESEND_FROM ?? "onboarding@resend.dev (défaut)"}`);
+
     // Idempotence — évite le double traitement si Stripe renvoie l'événement
     if (orderAlreadyExists(session.id)) {
+      console.log(`[WEBHOOK] Commande déjà traitée, ignorée.`);
       return NextResponse.json({ received: true });
     }
 
     try {
       const email = session.customer_details?.email ?? "";
       const name = session.customer_details?.name ?? email.split("@")[0];
+      console.log(`[WEBHOOK] Client: ${email} / ${name}`);
 
       const rawItems = JSON.parse(session.metadata?.items ?? "[]") as {
         id: string;
@@ -40,6 +46,7 @@ export async function POST(req: NextRequest) {
         type: "product" | "formation" | "ebook";
         price?: number;
       }[];
+      console.log(`[WEBHOOK] Items metadata: ${JSON.stringify(rawItems)}`);
 
       // Enrichir depuis Stripe si les noms/prix ne sont pas dans les métadonnées
       let lineItems: Stripe.LineItem[] = [];
@@ -47,8 +54,9 @@ export async function POST(req: NextRequest) {
         try {
           const li = await stripe.checkout.sessions.listLineItems(session.id, { limit: 100 });
           lineItems = li.data;
-        } catch {
-          // silencieux
+          console.log(`[WEBHOOK] Line items Stripe récupérés: ${lineItems.length}`);
+        } catch (liErr) {
+          console.error("[WEBHOOK] Erreur listLineItems:", liErr);
         }
       }
 
@@ -60,9 +68,11 @@ export async function POST(req: NextRequest) {
       }));
 
       const totalAmount = (session.amount_total ?? 0) / 100;
+      console.log(`[WEBHOOK] Total: ${totalAmount}€, items: ${orderItems.map(i => i.name).join(", ")}`);
 
       // 1. Créer / mettre à jour le client
       const customer = createOrUpdateCustomer(email, name);
+      console.log(`[WEBHOOK] Client créé/mis à jour: ${customer.id}`);
 
       // 2. Sauvegarder la commande
       createOrder({
@@ -72,13 +82,16 @@ export async function POST(req: NextRequest) {
         totalAmount,
         status: "paid",
       });
+      console.log(`[WEBHOOK] Commande sauvegardée`);
 
       // 3. Générer un magic link pour accéder directement à l'espace client
       const magicLink = createMagicLink(customer.id);
+      console.log(`[WEBHOOK] Magic link généré`);
 
       // 4. Envoyer l'email de confirmation
       if (email) {
-        await sendOrderConfirmation({
+        console.log(`[WEBHOOK] Envoi email vers: ${email}`);
+        const emailResult = await sendOrderConfirmation({
           to: email,
           customerName: name,
           orderRef: session.id,
@@ -86,12 +99,14 @@ export async function POST(req: NextRequest) {
           total: totalAmount,
           magicLink,
         });
+        console.log(`[WEBHOOK] Résultat Resend:`, JSON.stringify(emailResult));
+      } else {
+        console.warn(`[WEBHOOK] Pas d'email client, email non envoyé`);
       }
 
-      console.log(`[WEBHOOK] Commande ${session.id} traitée pour ${email}`);
+      console.log(`[WEBHOOK] ✅ Commande ${session.id} traitée pour ${email}`);
     } catch (err) {
-      console.error("[WEBHOOK] Erreur traitement commande:", err);
-      // On retourne quand même 200 pour éviter que Stripe ne réessaie inutilement
+      console.error("[WEBHOOK] ❌ Erreur traitement commande:", err);
     }
   }
 
