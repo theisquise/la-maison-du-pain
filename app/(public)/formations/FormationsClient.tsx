@@ -1,35 +1,34 @@
-"use client";
+'use client'
 
-import { useState, useMemo } from "react";
-import { formations } from "@/data/formations";
-import ProductCard from "@/components/ProductCard";
-import { Video, Clock, Users, Award } from "lucide-react";
+import { useState, useMemo } from 'react'
+import { Video, Clock, Users, Award } from 'lucide-react'
+import type { Formation } from '@/data/formations'
+import ProductCard from '@/components/ProductCard'
 
 const stats = [
-  { icon: Video, label: "Formations vidéo HD", value: "4" },
-  { icon: Clock, label: "Heures de contenu", value: "55h+" },
-  { icon: Users, label: "Élèves formés", value: "2 400+" },
-  { icon: Award, label: "Note moyenne", value: "4.9/5" },
-];
+  { icon: Video, label: 'Formations vidéo HD', value: '4' },
+  { icon: Clock, label: 'Heures de contenu', value: '55h+' },
+  { icon: Users, label: 'Élèves formés', value: '2 400+' },
+  { icon: Award, label: 'Note moyenne', value: '4.9/5' },
+]
 
-export default function FormationsPage() {
-  const [activeLevel, setActiveLevel] = useState("all");
+const levels = [
+  { id: 'all', label: 'Tous niveaux' },
+  { id: 'débutant', label: 'Débutant' },
+  { id: 'intermédiaire', label: 'Intermédiaire' },
+  { id: 'avancé', label: 'Avancé' },
+]
 
-  const videoFormations = useMemo(() => {
-    const list = formations.filter((f) => f.type === "formation");
-    return activeLevel === "all" ? list : list.filter((f) => f.level === activeLevel);
-  }, [activeLevel]);
+export default function FormationsClient({ formations }: { formations: Formation[] }) {
+  const [activeLevel, setActiveLevel] = useState('all')
 
-  const levels = [
-    { id: "all", label: "Tous niveaux" },
-    { id: "débutant", label: "Débutant" },
-    { id: "intermédiaire", label: "Intermédiaire" },
-    { id: "avancé", label: "Avancé" },
-  ];
+  const filtered = useMemo(
+    () => (activeLevel === 'all' ? formations : formations.filter((f) => f.level === activeLevel)),
+    [activeLevel, formations]
+  )
 
   return (
     <>
-      {/* Header */}
       <div className="page-header text-center">
         <h1 className="section-title mb-3">Formations en Ligne</h1>
         <p className="text-stone-500 text-lg max-w-2xl mx-auto">
@@ -37,7 +36,6 @@ export default function FormationsPage() {
         </p>
       </div>
 
-      {/* Stats */}
       <div className="bg-bakery-black py-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-8 text-center text-white">
@@ -53,7 +51,6 @@ export default function FormationsPage() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        {/* Filtres niveau */}
         <div className="flex flex-wrap gap-2 mb-10">
           {levels.map((l) => (
             <button
@@ -61,8 +58,8 @@ export default function FormationsPage() {
               onClick={() => setActiveLevel(l.id)}
               className={`px-5 py-2 rounded-full text-sm font-medium transition-all ${
                 activeLevel === l.id
-                  ? "bg-bakery-black text-white"
-                  : "bg-white text-stone-600 hover:bg-stone-100 border border-stone-200"
+                  ? 'bg-bakery-black text-white'
+                  : 'bg-white text-stone-600 hover:bg-stone-100 border border-stone-200'
               }`}
             >
               {l.label}
@@ -70,14 +67,12 @@ export default function FormationsPage() {
           ))}
         </div>
 
-        {/* Grille formations */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-          {videoFormations.map((f) => (
+          {filtered.map((f) => (
             <ProductCard key={f.id} item={f} />
           ))}
         </div>
 
-        {/* Garantie */}
         <div className="mt-20 bg-peach-100 rounded-3xl p-10 text-center">
           <h3 className="font-serif text-3xl font-bold mb-4">Satisfait ou Remboursé — 30 jours</h3>
           <p className="text-stone-500 max-w-xl mx-auto mb-2">
@@ -87,5 +82,5 @@ export default function FormationsPage() {
         </div>
       </div>
     </>
-  );
+  )
 }

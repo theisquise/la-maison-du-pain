@@ -1,10 +1,10 @@
-import Link from "next/link";
-import { ArrowRight } from "lucide-react";
-import { products } from "@/data/products";
-import ProductCard from "./ProductCard";
+import Link from 'next/link'
+import { ArrowRight } from 'lucide-react'
+import { getProducts } from '@/lib/admin-data'
+import ProductCard from './ProductCard'
 
 export default function Bestsellers() {
-  const bestsellers = products.filter((p) => p.bestseller).slice(0, 4);
+  const bestsellers = getProducts().filter((p) => p.bestseller).slice(0, 4)
 
   return (
     <section className="py-20 bg-white">
@@ -30,5 +30,5 @@ export default function Bestsellers() {
         </div>
       </div>
     </section>
-  );
+  )
 }
