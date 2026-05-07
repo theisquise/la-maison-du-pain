@@ -1,17 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { CheckCircle, Download, Mail, ArrowRight, PartyPopper } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
-import { Suspense } from "react";
 
 function SuccesContent() {
   const searchParams = useSearchParams();
   const sessionId = searchParams.get("session_id");
   const { clearCart } = useCart();
   const [cleared, setCleared] = useState(false);
+  const [types, setTypes] = useState<string[]>([]);
 
   useEffect(() => {
     if (!cleared) {
@@ -20,10 +20,20 @@ function SuccesContent() {
     }
   }, [clearCart, cleared]);
 
+  useEffect(() => {
+    if (!sessionId) return;
+    fetch(`/api/order?session_id=${sessionId}`)
+      .then((r) => r.json())
+      .then((d) => setTypes(d.types || ["product"]))
+      .catch(() => setTypes(["product"]));
+  }, [sessionId]);
+
+  const hasPhysical = types.length === 0 || types.includes("product");
+  const hasDigital = types.includes("formation") || types.includes("ebook");
+
   return (
     <div className="min-h-[80vh] flex items-center justify-center px-4 py-20">
       <div className="max-w-lg w-full text-center">
-        {/* Icône succès */}
         <div className="flex items-center justify-center mb-6">
           <div className="relative">
             <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center">
@@ -42,7 +52,6 @@ function SuccesContent() {
           Votre paiement a été confirmé. Vous allez recevoir un email de confirmation sous quelques minutes.
         </p>
 
-        {/* Étapes suivantes */}
         <div className="bg-stone-50 rounded-2xl p-6 mb-8 text-left space-y-4">
           <h3 className="font-semibold text-bakery-black mb-3 text-center">Prochaines étapes</h3>
 
@@ -54,27 +63,31 @@ function SuccesContent() {
             </div>
           </div>
 
-          <div className="flex items-start gap-3">
-            <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center shrink-0 text-blue-600 font-bold text-sm">2</div>
-            <div>
-              <p className="font-medium text-bakery-black text-sm flex items-center gap-1.5">
-                <Download className="w-3.5 h-3.5" />
-                Ebooks & formations
-              </p>
-              <p className="text-stone-400 text-xs">Lien de téléchargement dans l'email de confirmation</p>
+          {hasDigital && (
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center shrink-0 text-blue-600 font-bold text-sm">2</div>
+              <div>
+                <p className="font-medium text-bakery-black text-sm flex items-center gap-1.5">
+                  <Download className="w-3.5 h-3.5" />
+                  {types.includes("ebook") && types.includes("formation") ? "Ebooks & formations" : types.includes("ebook") ? "Votre ebook" : "Votre formation"}
+                </p>
+                <p className="text-stone-400 text-xs">Lien de téléchargement dans l'email de confirmation</p>
+              </div>
             </div>
-          </div>
+          )}
 
-          <div className="flex items-start gap-3">
-            <div className="w-8 h-8 bg-peach-200 rounded-full flex items-center justify-center shrink-0 text-bakery-brown font-bold text-sm">3</div>
-            <div>
-              <p className="font-medium text-bakery-black text-sm flex items-center gap-1.5">
-                <Mail className="w-3.5 h-3.5" />
-                Produits physiques
-              </p>
-              <p className="text-stone-400 text-xs">Livraison en 24-48h ouvrés, suivi par email</p>
+          {hasPhysical && (
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 bg-peach-200 rounded-full flex items-center justify-center shrink-0 text-bakery-brown font-bold text-sm">{hasDigital ? "3" : "2"}</div>
+              <div>
+                <p className="font-medium text-bakery-black text-sm flex items-center gap-1.5">
+                  <Mail className="w-3.5 h-3.5" />
+                  Livraison de votre commande
+                </p>
+                <p className="text-stone-400 text-xs">Livraison en 24-48h ouvrés, suivi par email</p>
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {sessionId && (
@@ -83,15 +96,16 @@ function SuccesContent() {
           </p>
         )}
 
-        {/* CTAs */}
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Link href="/boutique" className="btn-primary">
             Continuer mes achats
             <ArrowRight className="w-4 h-4" />
           </Link>
-          <Link href="/formations" className="btn-outline">
-            Mes formations
-          </Link>
+          {hasDigital && (
+            <Link href="/formations" className="btn-outline">
+              Mes formations
+            </Link>
+          )}
         </div>
 
         <p className="text-stone-400 text-sm mt-6">
