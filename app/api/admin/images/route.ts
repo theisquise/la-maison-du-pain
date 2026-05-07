@@ -3,7 +3,13 @@ import fs from "fs";
 import path from "path";
 import crypto from "crypto";
 import { requireAdmin } from "@/lib/admin-guard";
-import { isConfigured, uploadToCloudinary, deleteFromCloudinary, cdnUrl } from "@/lib/cloudinary";
+import {
+  isConfigured,
+  uploadToCloudinary,
+  deleteFromCloudinary,
+  cdnUrl,
+  listFromCloudinary,
+} from "@/lib/cloudinary";
 
 const IMAGES_DIR = path.join(process.cwd(), "data", "db", "images");
 const META_FILE = path.join(process.cwd(), "data", "db", "images-meta.json");
@@ -18,7 +24,7 @@ type ImageMeta = {
   size: number;
   uploadedAt: string;
   url: string;
-  publicId?: string; // Cloudinary public_id when CDN is configured
+  publicId?: string;
 };
 
 function ensureDir() {
@@ -33,7 +39,9 @@ function readMeta(): ImageMeta[] {
 }
 
 function writeMeta(meta: ImageMeta[]) {
-  fs.writeFileSync(META_FILE, JSON.stringify(meta, null, 2));
+  try {
+    fs.writeFileSync(META_FILE, JSON.stringify(meta, null, 2));
+  } catch {}
 }
 
 function buildLocalUrl(req: NextRequest, filename: string) {
@@ -45,13 +53,24 @@ function buildLocalUrl(req: NextRequest, filename: string) {
 export async function GET(req: NextRequest) {
   const err = requireAdmin();
   if (err) return err;
+
+  // When Cloudinary is configured, fetch list directly from Cloudinary API —
+  // this survives redeploys since images live on Cloudinary, not the local disk
+  if (isConfigured()) {
+    try {
+      const images = await listFromCloudinary();
+      return NextResponse.json(images);
+    } catch (e) {
+      console.error("[images list]", e);
+      return NextResponse.json({ error: "Impossible de lister les images Cloudinary" }, { status: 500 });
+    }
+  }
+
   ensureDir();
   const meta = readMeta();
-  // For local images (no publicId), rebuild URL from current host in case it changed
-  const enriched = meta.map((m) =>
-    m.publicId ? m : { ...m, url: buildLocalUrl(req, m.filename) }
+  return NextResponse.json(
+    meta.map((m) => ({ ...m, url: buildLocalUrl(req, m.filename) }))
   );
-  return NextResponse.json(enriched);
 }
 
 export async function POST(req: NextRequest) {
@@ -65,7 +84,7 @@ export async function POST(req: NextRequest) {
     if (!file) return NextResponse.json({ error: "Fichier manquant" }, { status: 400 });
 
     if (!ALLOWED_TYPES.includes(file.type)) {
-      return NextResponse.json({ error: "Type non autorisé (JPG, PNG, WEBP, GIF, SVG)" }, { status: 400 });
+      return NextResponse.json({ error: "Type non autorisé (JPG, PNG, WEBP, GIF)" }, { status: 400 });
     }
     if (file.size > MAX_SIZE) {
       return NextResponse.json({ error: "Fichier trop volumineux (max 10 Mo)" }, { status: 400 });
@@ -77,11 +96,9 @@ export async function POST(req: NextRequest) {
     const filename = `${safeName}-${hash}${ext}`;
     const buffer = Buffer.from(await file.arrayBuffer());
 
-    let entry: ImageMeta;
-
     if (isConfigured()) {
       const result = await uploadToCloudinary(buffer, filename);
-      entry = {
+      const entry: ImageMeta = {
         filename,
         originalName: file.name,
         size: file.size,
@@ -89,21 +106,21 @@ export async function POST(req: NextRequest) {
         url: cdnUrl(result.public_id),
         publicId: result.public_id,
       };
-    } else {
-      fs.writeFileSync(path.join(IMAGES_DIR, filename), buffer);
-      entry = {
-        filename,
-        originalName: file.name,
-        size: file.size,
-        uploadedAt: new Date().toISOString(),
-        url: buildLocalUrl(req, filename),
-      };
+      // No local meta needed — Cloudinary is the source of truth
+      return NextResponse.json({ ok: true, ...entry });
     }
 
+    fs.writeFileSync(path.join(IMAGES_DIR, filename), buffer);
+    const entry: ImageMeta = {
+      filename,
+      originalName: file.name,
+      size: file.size,
+      uploadedAt: new Date().toISOString(),
+      url: buildLocalUrl(req, filename),
+    };
     const meta = readMeta();
     meta.unshift(entry);
     writeMeta(meta);
-
     return NextResponse.json({ ok: true, ...entry });
   } catch (e) {
     console.error("[images upload]", e);
@@ -115,19 +132,19 @@ export async function DELETE(req: NextRequest) {
   const err = requireAdmin();
   if (err) return err;
   try {
-    const { filename } = (await req.json()) as { filename: string };
-    const safe = path.basename(filename);
+    const body = (await req.json()) as { filename?: string; publicId?: string };
+    const safe = path.basename(body.filename ?? "");
 
-    const meta = readMeta();
-    const entry = meta.find((m) => m.filename === safe);
-
-    if (entry?.publicId) {
-      await deleteFromCloudinary(entry.publicId);
-    } else {
-      const filepath = path.join(IMAGES_DIR, safe);
-      if (fs.existsSync(filepath)) fs.unlinkSync(filepath);
+    if (isConfigured()) {
+      // Use provided publicId or derive it from filename (Cloudinary strips extension)
+      const publicId = body.publicId ?? `maison-du-pain/${path.parse(safe).name}`;
+      await deleteFromCloudinary(publicId);
+      return NextResponse.json({ ok: true });
     }
 
+    const meta = readMeta();
+    const filepath = path.join(IMAGES_DIR, safe);
+    if (fs.existsSync(filepath)) fs.unlinkSync(filepath);
     writeMeta(meta.filter((m) => m.filename !== safe));
     return NextResponse.json({ ok: true });
   } catch (e) {

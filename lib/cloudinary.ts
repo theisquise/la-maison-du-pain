@@ -63,3 +63,46 @@ export async function deleteFromCloudinary(publicId: string) {
 export function cdnUrl(publicId: string, transform = "f_auto,q_auto,w_1400,c_limit") {
   return `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/${transform}/${publicId}`;
 }
+
+type CloudinaryResource = {
+  public_id: string;
+  format: string;
+  bytes: number;
+  created_at: string;
+};
+
+export type CloudinaryImageEntry = {
+  filename: string;
+  originalName: string;
+  size: number;
+  uploadedAt: string;
+  url: string;
+  publicId: string;
+};
+
+// Fetch the full image list from Cloudinary — survives redeploys
+export async function listFromCloudinary(): Promise<CloudinaryImageEntry[]> {
+  const url = new URL(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/resources/image`);
+  url.searchParams.set("prefix", `${FOLDER}/`);
+  url.searchParams.set("type", "upload");
+  url.searchParams.set("max_results", "500");
+
+  const creds = Buffer.from(`${API_KEY}:${API_SECRET}`).toString("base64");
+  const res = await fetch(url.toString(), {
+    headers: { Authorization: `Basic ${creds}` },
+  });
+  if (!res.ok) throw new Error(`Cloudinary list: ${await res.text()}`);
+
+  const data = await res.json() as { resources: CloudinaryResource[] };
+  return data.resources.map((r) => {
+    const name = `${r.public_id.split("/").pop()}.${r.format}`;
+    return {
+      filename: name,
+      originalName: name,
+      size: r.bytes,
+      uploadedAt: r.created_at,
+      url: cdnUrl(r.public_id),
+      publicId: r.public_id,
+    };
+  });
+}
