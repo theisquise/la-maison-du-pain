@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { ArrowRight, BookOpen, Video } from "lucide-react";
-import { formations } from "@/data/formations";
-import { siteConfig } from "@/data/site-config";
+import { getFormations, getConfig } from "@/lib/admin-data";
 import ProductCard from "./ProductCard";
 
 export default function FormationsPreview() {
-  const featured = formations.filter((f) => f.bestseller).slice(0, 3);
+  const featured = getFormations().filter((f) => f.bestseller).slice(0, 3);
+  const { siteConfig } = getConfig();
   const { formationsSection } = siteConfig;
 
   return (

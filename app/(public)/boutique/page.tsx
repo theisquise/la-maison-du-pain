@@ -2,7 +2,7 @@ import { getProducts } from '@/lib/admin-data'
 import { productCategories } from '@/data/products'
 import BoutiqueClient from './BoutiqueClient'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 30
 
 export default function BoutiquePage() {
   const products = getProducts()

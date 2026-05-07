@@ -1,9 +1,10 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import { siteConfig } from "@/data/site-config";
+import { getConfig } from "@/lib/admin-data";
 
 export default function TraditionSection() {
+  const { siteConfig } = getConfig();
   const { tradition } = siteConfig;
 
   return (

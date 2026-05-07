@@ -13,24 +13,36 @@ export type { Product, Formation, Testimonial }
 
 const DB_DIR = path.join(process.cwd(), 'data', 'db')
 
+// Module-level cache — avoids repeated disk reads across concurrent requests
+// Invalidated immediately on every write so admin changes are always fresh
+const CACHE_TTL = process.env.NODE_ENV === 'production' ? 10_000 : 500
+const dataCache = new Map<string, { value: unknown; expiry: number }>()
+
 function ensureDir() {
   if (!fs.existsSync(DB_DIR)) fs.mkdirSync(DB_DIR, { recursive: true })
 }
 
 function readJson<T>(filename: string, defaultValue: T): T {
+  const now = Date.now()
+  const cached = dataCache.get(filename)
+  if (cached && cached.expiry > now) return cached.value as T
+
   const filepath = path.join(DB_DIR, filename)
+  let result: T = defaultValue
   try {
     if (fs.existsSync(filepath)) {
-      return JSON.parse(fs.readFileSync(filepath, 'utf-8')) as T
+      result = JSON.parse(fs.readFileSync(filepath, 'utf-8')) as T
     }
   } catch (e) {
     console.error(`[admin-data] Error reading ${filename}:`, e)
   }
-  return defaultValue
+  dataCache.set(filename, { value: result, expiry: now + CACHE_TTL })
+  return result
 }
 
 function writeJson<T>(filename: string, data: T): void {
   ensureDir()
+  dataCache.delete(filename) // Invalidate immediately so next read is fresh
   const filepath = path.join(DB_DIR, filename)
   fs.writeFileSync(filepath, JSON.stringify(data, null, 2), 'utf-8')
 }

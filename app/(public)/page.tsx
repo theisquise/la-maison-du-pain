@@ -6,6 +6,9 @@ import FormationsPreview from "@/components/FormationsPreview";
 import Testimonials from "@/components/Testimonials";
 import Newsletter from "@/components/Newsletter";
 
+// ISR: page re-générée en arrière-plan toutes les 60s
+export const revalidate = 60;
+
 export default function HomePage() {
   return (
     <>

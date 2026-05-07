@@ -1,7 +1,7 @@
 import { getFormations } from '@/lib/admin-data'
 import EbooksClient from './EbooksClient'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 30
 
 export default function EbooksPage() {
   const ebooks = getFormations().filter((f) => f.type === 'ebook')
