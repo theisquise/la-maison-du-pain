@@ -51,8 +51,8 @@ export default function ProductCard({ item }: ProductCardProps) {
 
   const detailHref = isFormation
     ? formationItem!.type === "ebook"
-      ? `/ebooks`
-      : `/formations`
+      ? `/ebooks/${item.id}`
+      : `/formations/${item.id}`
     : `/boutique/${item.id}`;
 
   return (
