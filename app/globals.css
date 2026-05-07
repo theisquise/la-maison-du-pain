@@ -1,0 +1,84 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-cream text-bakery-black antialiased;
+    font-family: var(--font-inter), system-ui, sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-playfair), Georgia, serif;
+  }
+
+  * {
+    @apply box-border;
+  }
+
+  img {
+    @apply max-w-full;
+  }
+
+  ::selection {
+    @apply bg-bakery-gold/30;
+  }
+
+  /* Scrollbar personnalisée */
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-stone-100;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-stone-300 rounded-full;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-stone-400;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-bakery-black text-white px-8 py-3.5 rounded-full font-medium hover:bg-stone-800 transition-all hover:scale-105 inline-flex items-center gap-2;
+  }
+
+  .btn-outline {
+    @apply border-2 border-bakery-black text-bakery-black px-8 py-3.5 rounded-full font-medium hover:bg-bakery-black hover:text-white transition-all duration-200 inline-flex items-center gap-2;
+  }
+
+  .section-title {
+    @apply font-serif text-4xl sm:text-5xl font-bold text-bakery-black;
+  }
+
+  .card {
+    @apply bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 border border-stone-100;
+  }
+
+  .input-base {
+    @apply w-full px-4 py-3 rounded-xl border border-stone-200 focus:outline-none focus:border-bakery-black transition-colors text-sm bg-white;
+  }
+
+  .badge {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-medium;
+  }
+
+  .page-header {
+    @apply bg-peach-100 py-16 px-4;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .gradient-peach {
+    background: linear-gradient(135deg, #FFF8F4 0%, #FDEEE5 100%);
+  }
+}
