@@ -2,12 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
 import crypto from "crypto";
+import { requireAdmin } from "@/lib/admin-guard";
 import { isConfigured, uploadToCloudinary, deleteFromCloudinary, cdnUrl } from "@/lib/cloudinary";
 
 const IMAGES_DIR = path.join(process.cwd(), "data", "db", "images");
 const META_FILE = path.join(process.cwd(), "data", "db", "images-meta.json");
 
-const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/svg+xml"];
+// SVG excluded: can embed JavaScript (XSS vector)
+const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 const MAX_SIZE = 10 * 1024 * 1024; // 10 MB
 
 type ImageMeta = {
@@ -41,6 +43,8 @@ function buildLocalUrl(req: NextRequest, filename: string) {
 }
 
 export async function GET(req: NextRequest) {
+  const err = requireAdmin();
+  if (err) return err;
   ensureDir();
   const meta = readMeta();
   // For local images (no publicId), rebuild URL from current host in case it changed
@@ -51,6 +55,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const err = requireAdmin();
+  if (err) return err;
   try {
     ensureDir();
     const data = await req.formData();
@@ -106,6 +112,8 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  const err = requireAdmin();
+  if (err) return err;
   try {
     const { filename } = (await req.json()) as { filename: string };
     const safe = path.basename(filename);

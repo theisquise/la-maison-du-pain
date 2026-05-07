@@ -1,6 +1,43 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-export function middleware(req: NextRequest) {
+// Edge-compatible HMAC-SHA256 token verification (no Node.js crypto)
+async function verifyAdminToken(token: string): Promise<boolean> {
+  try {
+    const secret = process.env.ADMIN_SECRET ?? 'admin-secret-change-me-in-production'
+    const parts = token.split('.')
+    if (parts.length !== 2) return false
+    const [b64, sig] = parts
+
+    const enc = new TextEncoder()
+    const key = await crypto.subtle.importKey(
+      'raw',
+      enc.encode(secret),
+      { name: 'HMAC', hash: { name: 'SHA-256' } },
+      false,
+      ['verify']
+    )
+
+    // base64url → ArrayBuffer
+    const b64std = sig.replace(/-/g, '+').replace(/_/g, '/')
+    const padded = b64std + '=='.slice(0, (4 - (b64std.length % 4)) % 4)
+    const sigBytes = Uint8Array.from(atob(padded), (c) => c.charCodeAt(0))
+
+    const valid = await crypto.subtle.verify('HMAC', key, sigBytes, enc.encode(b64))
+    if (!valid) return false
+
+    // Check expiry
+    const payloadStr = atob(
+      b64.replace(/-/g, '+').replace(/_/g, '/') +
+        '=='.slice(0, (4 - (b64.length % 4)) % 4)
+    )
+    const payload = JSON.parse(payloadStr)
+    return typeof payload.exp === 'number' && payload.exp > Date.now()
+  } catch {
+    return false
+  }
+}
+
+export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
 
   // ─── Admin ────────────────────────────────────────────────────────────────
@@ -12,7 +49,8 @@ export function middleware(req: NextRequest) {
 
   if (isAdminPage || isAdminApi) {
     const token = req.cookies.get('admin_token')?.value
-    if (!token) {
+    const valid = token ? await verifyAdminToken(token) : false
+    if (!valid) {
       if (isAdminApi) {
         return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
       }
