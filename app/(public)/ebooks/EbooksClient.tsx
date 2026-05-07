@@ -1,6 +1,7 @@
 'use client'
 
 import Image from 'next/image'
+import Link from 'next/link'
 import { BookOpen, Download, Check, ShoppingBag, Star } from 'lucide-react'
 import type { Formation } from '@/data/formations'
 import { useCart } from '@/lib/cart-context'
@@ -71,7 +72,7 @@ function EbookCard({ ebook }: { ebook: Formation }) {
 
   return (
     <div className="card flex flex-col overflow-hidden group">
-      <div className="relative aspect-video overflow-hidden bg-peach-100">
+      <Link href={`/ebooks/${ebook.id}`} className="relative aspect-video overflow-hidden bg-peach-100 block">
         <Image
           src={ebook.image}
           alt={ebook.name}
@@ -90,10 +91,12 @@ function EbookCard({ ebook }: { ebook: Formation }) {
             </span>
           )}
         </div>
-      </div>
+      </Link>
 
       <div className="p-6 flex flex-col flex-1">
-        <h3 className="font-serif text-xl font-bold text-bakery-black mb-2">{ebook.name}</h3>
+        <Link href={`/ebooks/${ebook.id}`}>
+          <h3 className="font-serif text-xl font-bold text-bakery-black mb-2 hover:text-stone-600 transition-colors">{ebook.name}</h3>
+        </Link>
         <p className="text-stone-500 text-sm leading-relaxed mb-4 flex-1">{ebook.shortDescription}</p>
 
         <ul className="space-y-1.5 mb-5">
