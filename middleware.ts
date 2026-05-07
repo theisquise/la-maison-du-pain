@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
 
+  // ─── Admin ────────────────────────────────────────────────────────────────
   const isAdminPage =
     pathname === '/admin' ||
     (pathname.startsWith('/admin/') && !pathname.startsWith('/admin/login'))
@@ -21,9 +22,22 @@ export function middleware(req: NextRequest) {
     }
   }
 
+  // ─── Espace client ────────────────────────────────────────────────────────
+  const isCustomerPage =
+    pathname === '/mon-compte' ||
+    (pathname.startsWith('/mon-compte/') && !pathname.startsWith('/mon-compte/connexion'))
+
+  if (isCustomerPage) {
+    const token = req.cookies.get('customer_token')?.value
+    if (!token) {
+      const loginUrl = new URL('/mon-compte/connexion', req.url)
+      return NextResponse.redirect(loginUrl)
+    }
+  }
+
   return NextResponse.next()
 }
 
 export const config = {
-  matcher: ['/admin', '/admin/:path*', '/api/admin/:path*'],
+  matcher: ['/admin', '/admin/:path*', '/api/admin/:path*', '/mon-compte', '/mon-compte/:path*'],
 }

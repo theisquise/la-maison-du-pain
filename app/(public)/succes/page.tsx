@@ -97,15 +97,16 @@ function SuccesContent() {
         )}
 
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <Link href="/boutique" className="btn-primary">
-            Continuer mes achats
-            <ArrowRight className="w-4 h-4" />
-          </Link>
           {hasDigital && (
-            <Link href="/formations" className="btn-outline">
-              Mes formations
+            <Link href="/mon-compte" className="btn-primary">
+              Accéder à mes achats
+              <ArrowRight className="w-4 h-4" />
             </Link>
           )}
+          <Link href="/boutique" className={hasDigital ? "btn-outline" : "btn-primary"}>
+            Continuer mes achats
+            {!hasDigital && <ArrowRight className="w-4 h-4" />}
+          </Link>
         </div>
 
         <p className="text-stone-400 text-sm mt-6">
