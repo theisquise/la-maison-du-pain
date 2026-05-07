@@ -10,6 +10,18 @@ const nextConfig = {
         protocol: "https",
         hostname: "plus.unsplash.com",
       },
+      {
+        protocol: "https",
+        hostname: "boulangerie-alex.com",
+      },
+      {
+        protocol: "https",
+        hostname: "staging.boulangerie-alex.com",
+      },
+      {
+        protocol: "http",
+        hostname: "localhost",
+      },
     ],
   },
 };
