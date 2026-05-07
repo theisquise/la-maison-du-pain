@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
 import crypto from "crypto";
+import { isConfigured, uploadToCloudinary, deleteFromCloudinary, cdnUrl } from "@/lib/cloudinary";
 
 const IMAGES_DIR = path.join(process.cwd(), "data", "db", "images");
 const META_FILE = path.join(process.cwd(), "data", "db", "images-meta.json");
@@ -15,6 +16,7 @@ type ImageMeta = {
   size: number;
   uploadedAt: string;
   url: string;
+  publicId?: string; // Cloudinary public_id when CDN is configured
 };
 
 function ensureDir() {
@@ -32,7 +34,7 @@ function writeMeta(meta: ImageMeta[]) {
   fs.writeFileSync(META_FILE, JSON.stringify(meta, null, 2));
 }
 
-function buildUrl(req: NextRequest, filename: string) {
+function buildLocalUrl(req: NextRequest, filename: string) {
   const host = req.headers.get("host") ?? "localhost:3000";
   const proto = host.includes("localhost") ? "http" : "https";
   return `${proto}://${host}/api/images/${filename}`;
@@ -41,7 +43,10 @@ function buildUrl(req: NextRequest, filename: string) {
 export async function GET(req: NextRequest) {
   ensureDir();
   const meta = readMeta();
-  const enriched = meta.map((m) => ({ ...m, url: buildUrl(req, m.filename) }));
+  // For local images (no publicId), rebuild URL from current host in case it changed
+  const enriched = meta.map((m) =>
+    m.publicId ? m : { ...m, url: buildLocalUrl(req, m.filename) }
+  );
   return NextResponse.json(enriched);
 }
 
@@ -64,17 +69,31 @@ export async function POST(req: NextRequest) {
     const hash = crypto.randomBytes(6).toString("hex");
     const safeName = file.name.replace(/[^a-z0-9_.-]/gi, "-").replace(ext, "");
     const filename = `${safeName}-${hash}${ext}`;
-
     const buffer = Buffer.from(await file.arrayBuffer());
-    fs.writeFileSync(path.join(IMAGES_DIR, filename), buffer);
 
-    const entry: ImageMeta = {
-      filename,
-      originalName: file.name,
-      size: file.size,
-      uploadedAt: new Date().toISOString(),
-      url: buildUrl(req, filename),
-    };
+    let entry: ImageMeta;
+
+    if (isConfigured()) {
+      const result = await uploadToCloudinary(buffer, filename);
+      entry = {
+        filename,
+        originalName: file.name,
+        size: file.size,
+        uploadedAt: new Date().toISOString(),
+        url: cdnUrl(result.public_id),
+        publicId: result.public_id,
+      };
+    } else {
+      fs.writeFileSync(path.join(IMAGES_DIR, filename), buffer);
+      entry = {
+        filename,
+        originalName: file.name,
+        size: file.size,
+        uploadedAt: new Date().toISOString(),
+        url: buildLocalUrl(req, filename),
+      };
+    }
+
     const meta = readMeta();
     meta.unshift(entry);
     writeMeta(meta);
@@ -90,10 +109,18 @@ export async function DELETE(req: NextRequest) {
   try {
     const { filename } = (await req.json()) as { filename: string };
     const safe = path.basename(filename);
-    const filepath = path.join(IMAGES_DIR, safe);
-    if (fs.existsSync(filepath)) fs.unlinkSync(filepath);
-    const updated = readMeta().filter((m) => m.filename !== safe);
-    writeMeta(updated);
+
+    const meta = readMeta();
+    const entry = meta.find((m) => m.filename === safe);
+
+    if (entry?.publicId) {
+      await deleteFromCloudinary(entry.publicId);
+    } else {
+      const filepath = path.join(IMAGES_DIR, safe);
+      if (fs.existsSync(filepath)) fs.unlinkSync(filepath);
+    }
+
+    writeMeta(meta.filter((m) => m.filename !== safe));
     return NextResponse.json({ ok: true });
   } catch (e) {
     console.error("[images delete]", e);
