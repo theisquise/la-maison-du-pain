@@ -11,13 +11,15 @@ import {
   LogOut,
   Users,
   Images,
+  Package,
 } from 'lucide-react'
 
 const navItems = [
   { href: '/admin', label: 'Tableau de bord', icon: LayoutDashboard, exact: true },
+  { href: '/admin/commandes', label: 'Commandes', icon: Package, exact: false },
   { href: '/admin/produits', label: 'Produits', icon: ShoppingBag, exact: false },
   { href: '/admin/formations', label: 'Formations & Ebooks', icon: GraduationCap, exact: false },
-  { href: '/admin/clients', label: 'Clients & Commandes', icon: Users, exact: false },
+  { href: '/admin/clients', label: 'Clients & Fichiers', icon: Users, exact: false },
   { href: '/admin/images', label: 'Médiathèque', icon: Images, exact: false },
   { href: '/admin/avis', label: 'Témoignages', icon: MessageSquare, exact: false },
   { href: '/admin/config', label: 'Configuration', icon: Settings, exact: false },

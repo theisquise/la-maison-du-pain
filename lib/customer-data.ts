@@ -26,7 +26,10 @@ export type Order = {
   stripeSessionId: string;
   items: OrderItem[];
   totalAmount: number;
-  status: "paid";
+  status: "paid" | "shipped" | "delivered";
+  trackingNumber?: string;
+  shippedAt?: string;
+  deliveredAt?: string;
   createdAt: string;
 };
 
@@ -133,6 +136,22 @@ export function getAllOrders(): Order[] {
 
 export function orderAlreadyExists(stripeSessionId: string): boolean {
   return readDB().orders.some((o) => o.stripeSessionId === stripeSessionId);
+}
+
+export function updateOrderStatus(
+  orderId: string,
+  status: Order["status"],
+  trackingNumber?: string
+): Order | null {
+  const db = readDB();
+  const order = db.orders.find((o) => o.id === orderId);
+  if (!order) return null;
+  order.status = status;
+  if (trackingNumber !== undefined) order.trackingNumber = trackingNumber || undefined;
+  if (status === "shipped" && !order.shippedAt) order.shippedAt = new Date().toISOString();
+  if (status === "delivered" && !order.deliveredAt) order.deliveredAt = new Date().toISOString();
+  writeDB(db);
+  return order;
 }
 
 // ─── Magic links ──────────────────────────────────────────────────────────────
