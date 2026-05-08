@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { Tag, Trash2, Plus, ToggleLeft, ToggleRight } from 'lucide-react'
 
-type PromoCode = { code: string; discountPct: number; description: string; active: boolean }
+type PromoCode = { code: string; discountPct: number; description: string; active: boolean; requiresNewsletter?: boolean; oneTimeUse?: boolean; usedEmails?: string[] }
 
 export default function PromosPage() {
   const [codes, setCodes] = useState<PromoCode[]>([])
@@ -115,6 +115,7 @@ export default function PromosPage() {
                 <th className="text-left px-6 py-3 text-xs text-stone-400 font-medium uppercase tracking-wider">Code</th>
                 <th className="text-left px-6 py-3 text-xs text-stone-400 font-medium uppercase tracking-wider">Remise</th>
                 <th className="text-left px-6 py-3 text-xs text-stone-400 font-medium uppercase tracking-wider hidden sm:table-cell">Description</th>
+                <th className="text-left px-6 py-3 text-xs text-stone-400 font-medium uppercase tracking-wider hidden sm:table-cell">Utilisations</th>
                 <th className="text-left px-6 py-3 text-xs text-stone-400 font-medium uppercase tracking-wider">Statut</th>
                 <th className="px-6 py-3" />
               </tr>
@@ -126,7 +127,16 @@ export default function PromosPage() {
                     <span className="font-mono font-semibold text-amber-400 bg-amber-900/30 px-2 py-1 rounded text-sm">{c.code}</span>
                   </td>
                   <td className="px-6 py-4 text-white text-sm font-semibold">-{c.discountPct}%</td>
-                  <td className="px-6 py-4 text-stone-400 text-sm hidden sm:table-cell">{c.description || '—'}</td>
+                  <td className="px-6 py-4 text-stone-400 text-sm hidden sm:table-cell">
+                    <div>{c.description || '—'}</div>
+                    <div className="flex gap-2 mt-1">
+                      {c.requiresNewsletter && <span className="text-xs bg-blue-900/40 text-blue-400 px-1.5 py-0.5 rounded">newsletter</span>}
+                      {c.oneTimeUse && <span className="text-xs bg-purple-900/40 text-purple-400 px-1.5 py-0.5 rounded">1×/personne</span>}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 text-stone-400 text-sm hidden sm:table-cell">
+                    {c.oneTimeUse ? `${c.usedEmails?.length ?? 0} utilisation${(c.usedEmails?.length ?? 0) > 1 ? 's' : ''}` : '∞'}
+                  </td>
                   <td className="px-6 py-4">
                     <button onClick={() => handleToggle(c.code, !c.active)} className="flex items-center gap-1.5 text-sm transition-colors">
                       {c.active

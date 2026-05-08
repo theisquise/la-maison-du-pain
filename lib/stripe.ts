@@ -19,7 +19,7 @@ export type CheckoutItem = {
   stripeProductId?: string;
 };
 
-export async function createCheckoutSession(items: CheckoutItem[], siteUrl: string, promoDiscount?: { code: string; pct: number }) {
+export async function createCheckoutSession(items: CheckoutItem[], siteUrl: string, promoDiscount?: { code: string; pct: number; email?: string }) {
   const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = items.map((item) => ({
     price_data: {
       currency: "eur",
@@ -91,6 +91,7 @@ export async function createCheckoutSession(items: CheckoutItem[], siteUrl: stri
     phone_number_collection: { enabled: true },
     metadata: {
       items: JSON.stringify(items.map((i) => ({ id: i.id, type: i.type }))),
+      ...(promoDiscount ? { promoCode: promoDiscount.code, promoEmail: promoDiscount.email ?? "" } : {}),
     },
   });
 

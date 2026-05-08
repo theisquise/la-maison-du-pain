@@ -11,9 +11,11 @@ export default function PanierPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [promoInput, setPromoInput] = useState("");
-  const [promoState, setPromoState] = useState<{ code: string; pct: number; label: string } | null>(null);
+  const [promoEmail, setPromoEmail] = useState("");
+  const [promoState, setPromoState] = useState<{ code: string; pct: number; label: string; email?: string } | null>(null);
   const [promoError, setPromoError] = useState("");
   const [promoLoading, setPromoLoading] = useState(false);
+  const [promoNeedsEmail, setPromoNeedsEmail] = useState(false);
 
   // Livraison uniquement sur les produits physiques
   const hasPhysical = state.items.some((i) => i.type === "product");
@@ -51,12 +53,17 @@ export default function PanierPage() {
       const res = await fetch("/api/promo/validate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code: promoInput.trim() }),
+        body: JSON.stringify({ code: promoInput.trim(), email: promoEmail.trim() || undefined }),
       });
       const data = await res.json();
       if (data.valid) {
-        setPromoState({ code: promoInput.trim().toUpperCase(), pct: data.discountPct, label: data.description });
+        setPromoState({ code: promoInput.trim().toUpperCase(), pct: data.discountPct, label: data.description, email: promoEmail.trim() || undefined });
+        setPromoNeedsEmail(false);
+      } else if (data.needsEmail) {
+        setPromoNeedsEmail(true);
+        setPromoError(data.error ?? "Email requis.");
       } else {
+        setPromoNeedsEmail(false);
         setPromoError(data.error ?? "Code invalide.");
       }
     } catch {
@@ -72,7 +79,11 @@ export default function PanierPage() {
       const res = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items: state.items, promoCode: promoState && !hasPackDiscount ? promoState.code : undefined }),
+        body: JSON.stringify({
+          items: state.items,
+          promoCode: promoState && !hasPackDiscount ? promoState.code : undefined,
+          promoEmail: promoState && !hasPackDiscount ? promoState.email : undefined,
+        }),
       });
       const data = await res.json();
       if (data.url) {
@@ -210,12 +221,12 @@ export default function PanierPage() {
                     </div>
                   </div>
                 ) : (
-                  <div>
+                  <div className="space-y-2">
                     <div className="flex gap-2">
                       <input
                         type="text"
                         value={promoInput}
-                        onChange={e => { setPromoInput(e.target.value.toUpperCase()); setPromoError(""); }}
+                        onChange={e => { setPromoInput(e.target.value.toUpperCase()); setPromoError(""); setPromoNeedsEmail(false); }}
                         onKeyDown={e => e.key === "Enter" && handleApplyPromo()}
                         placeholder="Code promo"
                         className="flex-1 border border-stone-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-bakery-black"
@@ -229,9 +240,29 @@ export default function PanierPage() {
                         {promoLoading ? "…" : "Appliquer"}
                       </button>
                     </div>
-                    {promoError && <p className="text-red-500 text-xs mt-1.5">{promoError}</p>}
+                    {promoNeedsEmail && (
+                      <div className="flex gap-2">
+                        <input
+                          type="email"
+                          value={promoEmail}
+                          onChange={e => { setPromoEmail(e.target.value); setPromoError(""); }}
+                          onKeyDown={e => e.key === "Enter" && handleApplyPromo()}
+                          placeholder="Votre email newsletter"
+                          className="flex-1 border border-amber-200 bg-amber-50 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-amber-400"
+                          autoFocus
+                        />
+                        <button
+                          onClick={handleApplyPromo}
+                          disabled={promoLoading || !promoEmail.trim()}
+                          className="flex items-center gap-1.5 bg-amber-500 hover:bg-amber-400 text-white text-sm font-medium px-4 py-2 rounded-xl transition-colors disabled:opacity-50"
+                        >
+                          {promoLoading ? "…" : "Valider"}
+                        </button>
+                      </div>
+                    )}
+                    {promoError && <p className="text-red-500 text-xs">{promoError}</p>}
                     {hasPackDiscount && promoState && (
-                      <p className="text-amber-600 text-xs mt-1.5">Non cumulable avec une réduction pack.</p>
+                      <p className="text-amber-600 text-xs">Non cumulable avec une réduction pack.</p>
                     )}
                   </div>
                 )}

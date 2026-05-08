@@ -8,10 +8,21 @@ export type PromoCode = {
   discountPct: number;
   description: string;
   active: boolean;
+  requiresNewsletter?: boolean;
+  oneTimeUse?: boolean;
+  usedEmails?: string[];
 };
 
 const DEFAULTS: PromoCode[] = [
-  { code: "BIENVENUE5", discountPct: 5, description: "-5% newsletter bienvenue", active: true },
+  {
+    code: "BIENVENUE5",
+    discountPct: 5,
+    description: "-5% newsletter bienvenue",
+    active: true,
+    requiresNewsletter: true,
+    oneTimeUse: true,
+    usedEmails: [],
+  },
 ];
 
 type DB = { codes: PromoCode[] };
@@ -40,13 +51,25 @@ export function validatePromoCode(code: string): PromoCode | null {
   return found ?? null;
 }
 
+export function markPromoUsed(code: string, email: string): void {
+  const db = read();
+  const item = db.codes.find((c) => c.code.toUpperCase() === code.toUpperCase());
+  if (!item) return;
+  if (!item.usedEmails) item.usedEmails = [];
+  const normalized = email.toLowerCase().trim();
+  if (!item.usedEmails.includes(normalized)) {
+    item.usedEmails.push(normalized);
+    write(db);
+  }
+}
+
 export function addPromoCode(promo: PromoCode): void {
   const db = read();
   const idx = db.codes.findIndex((c) => c.code.toUpperCase() === promo.code.toUpperCase());
   if (idx >= 0) {
-    db.codes[idx] = promo;
+    db.codes[idx] = { ...db.codes[idx], ...promo, code: promo.code.toUpperCase().trim() };
   } else {
-    db.codes.push({ ...promo, code: promo.code.toUpperCase().trim() });
+    db.codes.push({ ...promo, code: promo.code.toUpperCase().trim(), usedEmails: [] });
   }
   write(db);
 }

@@ -4,6 +4,7 @@ import Stripe from "stripe";
 import { createOrUpdateCustomer, createOrder, orderAlreadyExists } from "@/lib/customer-data";
 import { createMagicLink } from "@/lib/customer-auth";
 import { sendOrderConfirmation, type OrderItem } from "@/lib/resend";
+import { markPromoUsed } from "@/lib/promo-data";
 
 export async function POST(req: NextRequest) {
   const body = await req.text();
@@ -103,6 +104,14 @@ export async function POST(req: NextRequest) {
         console.log(`[WEBHOOK] Résultat Resend:`, JSON.stringify(emailResult));
       } else {
         console.warn(`[WEBHOOK] Pas d'email client, email non envoyé`);
+      }
+
+      // 5. Marquer le code promo comme utilisé (usage unique)
+      const promoCode = session.metadata?.promoCode;
+      const promoEmail = session.metadata?.promoEmail;
+      if (promoCode && promoEmail) {
+        markPromoUsed(promoCode, promoEmail);
+        console.log(`[WEBHOOK] Code promo ${promoCode} marqué utilisé pour ${promoEmail}`);
       }
 
       console.log(`[WEBHOOK] ✅ Commande ${session.id} traitée pour ${email}`);
