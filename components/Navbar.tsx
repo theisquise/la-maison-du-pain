@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { ShoppingBag, Search, Menu, X, ChefHat } from "lucide-react";
+import { ShoppingBag, Search, Menu, X, ChefHat, User } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
 import { siteConfig, navigation } from "@/data/site-config";
 import CartDrawer from "./CartDrawer";
@@ -38,6 +38,15 @@ export default function Navbar() {
 
             {/* Actions */}
             <div className="flex items-center gap-3">
+              {/* Espace client */}
+              <Link
+                href="/mon-compte"
+                className="p-2 text-stone-500 hover:text-bakery-black transition-colors"
+                aria-label="Mon compte"
+              >
+                <User className="w-5 h-5" />
+              </Link>
+
               {/* Recherche */}
               <button
                 onClick={() => setSearchOpen(!searchOpen)}
@@ -99,6 +108,13 @@ export default function Navbar() {
                   {item.label}
                 </Link>
               ))}
+              <Link
+                href="/mon-compte"
+                onClick={() => setMobileOpen(false)}
+                className="py-3 text-stone-700 hover:text-bakery-black font-medium flex items-center gap-2"
+              >
+                <User className="w-4 h-4" /> Mon compte
+              </Link>
             </nav>
           </div>
         )}

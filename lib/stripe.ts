@@ -33,6 +33,38 @@ export async function createCheckoutSession(items: CheckoutItem[], siteUrl: stri
     quantity: item.quantity,
   }));
 
+  // Réductions pack ebooks
+  const ebookItems = items.filter((i) => i.type === "ebook");
+  const ebookCount = ebookItems.reduce((sum, i) => sum + i.quantity, 0);
+  const ebookDiscountPct = ebookCount >= 3 ? 20 : ebookCount >= 2 ? 10 : 0;
+  if (ebookDiscountPct > 0) {
+    const ebookTotal = ebookItems.reduce((sum, i) => sum + Math.round(i.price * 100) * i.quantity, 0);
+    lineItems.push({
+      price_data: {
+        currency: "eur",
+        product_data: { name: `Réduction pack ebooks (${ebookDiscountPct}%)` },
+        unit_amount: -Math.round(ebookTotal * ebookDiscountPct / 100),
+      },
+      quantity: 1,
+    });
+  }
+
+  // Réductions pack formations
+  const formationItems = items.filter((i) => i.type === "formation");
+  const formationCount = formationItems.reduce((sum, i) => sum + i.quantity, 0);
+  const formationDiscountPct = formationCount >= 2 ? 10 : 0;
+  if (formationDiscountPct > 0) {
+    const formationTotal = formationItems.reduce((sum, i) => sum + Math.round(i.price * 100) * i.quantity, 0);
+    lineItems.push({
+      price_data: {
+        currency: "eur",
+        product_data: { name: `Réduction pack formations (${formationDiscountPct}%)` },
+        unit_amount: -Math.round(formationTotal * formationDiscountPct / 100),
+      },
+      quantity: 1,
+    });
+  }
+
   const session = await stripe.checkout.sessions.create({
     mode: "payment",
     payment_method_types: ["card"],

@@ -51,14 +51,14 @@ export default function ProductCard({ item }: ProductCardProps) {
 
   const detailHref = isFormation
     ? formationItem!.type === "ebook"
-      ? `/ebooks`
-      : `/formations`
-    : `/boutique`;
+      ? `/ebooks/${item.id}`
+      : `/formations/${item.id}`
+    : `/boutique/${item.id}`;
 
   return (
     <div className="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-stone-100 flex flex-col">
-      {/* Image */}
-      <div className="relative aspect-square overflow-hidden bg-peach-100">
+      {/* Image cliquable */}
+      <Link href={detailHref} className="relative aspect-square overflow-hidden bg-peach-100 block">
         <Image
           src={item.image}
           alt={item.name}
@@ -84,13 +84,15 @@ export default function ProductCard({ item }: ProductCardProps) {
             </span>
           )}
         </div>
-      </div>
+      </Link>
 
       {/* Contenu */}
       <div className="p-4 flex flex-col flex-1">
-        <h3 className="font-serif font-semibold text-bakery-black mb-1 line-clamp-2 leading-snug">
-          {item.name}
-        </h3>
+        <Link href={detailHref}>
+          <h3 className="font-serif font-semibold text-bakery-black mb-1 line-clamp-2 leading-snug hover:text-stone-600 transition-colors">
+            {item.name}
+          </h3>
+        </Link>
 
         {/* Infos formation */}
         {formationItem && (

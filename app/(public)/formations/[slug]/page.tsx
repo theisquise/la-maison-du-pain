@@ -1,0 +1,157 @@
+import { notFound } from 'next/navigation'
+import Image from 'next/image'
+import Link from 'next/link'
+import { ArrowLeft, Star, CheckCircle2, Clock, Infinity, Award } from 'lucide-react'
+import { getFormations } from '@/lib/admin-data'
+import { levelLabels } from '@/data/formations'
+import ProductCard from '@/components/ProductCard'
+import FormationAddToCartButton from './AddToCartButton'
+import ProductReviews from '@/components/ProductReviews'
+
+export const revalidate = 30
+
+export async function generateMetadata({ params }: { params: { slug: string } }) {
+  const formation = getFormations().find((f) => f.id === params.slug && f.type === 'formation')
+  if (!formation) return {}
+  return {
+    title: formation.name,
+    description: formation.shortDescription,
+    openGraph: {
+      title: formation.name,
+      description: formation.shortDescription,
+      images: formation.image ? [{ url: formation.image, width: 800, height: 600, alt: formation.name }] : [],
+    },
+  }
+}
+
+function StarRating({ rating, count }: { rating: number; count: number }) {
+  return (
+    <div className="flex items-center gap-2">
+      <div className="flex items-center gap-0.5">
+        {[1, 2, 3, 4, 5].map((s) => (
+          <Star key={s} className={`w-4 h-4 ${s <= Math.round(rating) ? 'fill-bakery-gold text-bakery-gold' : 'text-stone-200'}`} />
+        ))}
+      </div>
+      <span className="text-sm font-semibold text-bakery-black">{rating.toFixed(1)}</span>
+      <span className="text-sm text-stone-400">({count} avis)</span>
+    </div>
+  )
+}
+
+export default function FormationPage({ params }: { params: { slug: string } }) {
+  const formations = getFormations()
+  const formation = formations.find((f) => f.id === params.slug && f.type === 'formation')
+  if (!formation) notFound()
+
+  const level = levelLabels[formation.level]
+  const related = formations
+    .filter((f) => f.type === 'formation' && f.id !== formation.id)
+    .slice(0, 3)
+
+  return (
+    <div className="bg-cream min-h-screen">
+      {/* Breadcrumb */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-4">
+        <div className="flex items-center gap-2 text-sm text-stone-400">
+          <Link href="/" className="hover:text-bakery-black transition-colors">Accueil</Link>
+          <span>/</span>
+          <Link href="/formations" className="hover:text-bakery-black transition-colors">Formations</Link>
+          <span>/</span>
+          <span className="text-bakery-black font-medium">{formation.name}</span>
+        </div>
+      </div>
+
+      {/* Contenu principal */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
+
+          {/* Image */}
+          <div className="relative aspect-video rounded-3xl overflow-hidden shadow-2xl">
+            <Image src={formation.image} alt={formation.name} fill className="object-cover" sizes="(max-width: 1024px) 100vw, 50vw" priority />
+            {formation.bestseller && (
+              <div className="absolute top-5 left-5">
+                <span className="bg-bakery-black text-white text-sm px-4 py-1.5 rounded-full font-medium">⭐ Bestseller</span>
+              </div>
+            )}
+            <div className="absolute bottom-5 left-5">
+              <span className={`text-sm px-4 py-1.5 rounded-full font-medium ${level.color}`}>{level.label}</span>
+            </div>
+          </div>
+
+          {/* Infos */}
+          <div className="flex flex-col gap-6">
+            <div>
+              <span className="text-sm font-medium text-bakery-gold uppercase tracking-wider">Formation vidéo · {formation.duration}</span>
+              <h1 className="font-serif text-4xl sm:text-5xl font-bold text-bakery-black mt-2 leading-tight">{formation.name}</h1>
+            </div>
+
+            <StarRating rating={formation.rating} count={formation.reviewCount} />
+
+            <p className="text-stone-600 text-lg leading-relaxed">{formation.longDescription}</p>
+
+            {/* Prix */}
+            <div className="flex items-baseline gap-3">
+              <span className="text-4xl font-bold text-bakery-black">{formation.price.toFixed(2).replace('.', ',')} €</span>
+              {formation.originalPrice && (
+                <span className="text-xl text-stone-400 line-through">{formation.originalPrice.toFixed(2).replace('.', ',')} €</span>
+              )}
+              {formation.originalPrice && (
+                <span className="bg-red-500 text-white text-sm px-3 py-1 rounded-full font-medium">
+                  -{Math.round((1 - formation.price / formation.originalPrice) * 100)}%
+                </span>
+              )}
+            </div>
+
+            {/* Ce qui est inclus */}
+            <div className="bg-white rounded-2xl p-5 shadow-sm border border-stone-100">
+              <p className="font-semibold text-bakery-black mb-3">Ce qui est inclus :</p>
+              <ul className="flex flex-col gap-2">
+                {formation.includes.map((item) => (
+                  <li key={item} className="flex items-center gap-2.5 text-stone-600 text-sm">
+                    <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Badges */}
+            <div className="grid grid-cols-3 gap-3">
+              <div className="flex flex-col items-center gap-1.5 bg-white rounded-2xl p-4 text-center shadow-sm">
+                <Clock className="w-5 h-5 text-bakery-gold" />
+                <span className="text-xs font-medium text-stone-600">{formation.duration}</span>
+              </div>
+              <div className="flex flex-col items-center gap-1.5 bg-white rounded-2xl p-4 text-center shadow-sm">
+                <Infinity className="w-5 h-5 text-bakery-gold" />
+                <span className="text-xs font-medium text-stone-600">Accès à vie</span>
+              </div>
+              <div className="flex flex-col items-center gap-1.5 bg-white rounded-2xl p-4 text-center shadow-sm">
+                <Award className="w-5 h-5 text-bakery-gold" />
+                <span className="text-xs font-medium text-stone-600">Certificat</span>
+              </div>
+            </div>
+
+            <FormationAddToCartButton formation={formation} />
+
+            <Link href="/formations" className="inline-flex items-center gap-2 text-stone-400 hover:text-bakery-black transition-colors text-sm">
+              <ArrowLeft className="w-4 h-4" />
+              Retour aux formations
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      <ProductReviews productName={formation.name} />
+
+      {/* Autres formations */}
+      {related.length > 0 && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <h2 className="font-serif text-3xl font-bold text-bakery-black mb-8">Autres formations</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {related.map((f) => <ProductCard key={f.id} item={f} />)}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
