@@ -13,6 +13,7 @@ import {
   Images,
   Package,
   Mail,
+  Tag,
 } from 'lucide-react'
 
 const navItems = [
@@ -24,6 +25,7 @@ const navItems = [
   { href: '/admin/images', label: 'Médiathèque', icon: Images, exact: false },
   { href: '/admin/avis', label: 'Témoignages', icon: MessageSquare, exact: false },
   { href: '/admin/newsletter', label: 'Newsletter', icon: Mail, exact: false },
+  { href: '/admin/promos', label: 'Codes promo', icon: Tag, exact: false },
   { href: '/admin/config', label: 'Configuration', icon: Settings, exact: false },
 ]
 

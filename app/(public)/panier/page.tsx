@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Minus, Plus, Trash2, ShoppingBag, ArrowRight, Lock, Truck } from "lucide-react";
+import { Minus, Plus, Trash2, ShoppingBag, ArrowRight, Lock, Truck, Tag, CheckCircle2, XCircle } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
 import { useState } from "react";
 
@@ -10,6 +10,10 @@ export default function PanierPage() {
   const { state, removeItem, updateQuantity, totalPrice, clearCart } = useCart();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [promoInput, setPromoInput] = useState("");
+  const [promoState, setPromoState] = useState<{ code: string; pct: number; label: string } | null>(null);
+  const [promoError, setPromoError] = useState("");
+  const [promoLoading, setPromoLoading] = useState(false);
 
   // Livraison uniquement sur les produits physiques
   const hasPhysical = state.items.some((i) => i.type === "product");
@@ -31,7 +35,35 @@ export default function PanierPage() {
   const formationDiscount = parseFloat((formationTotal * formationDiscountPct / 100).toFixed(2));
 
   const totalDiscount = ebookDiscount + formationDiscount;
-  const total = totalPrice - totalDiscount + shipping;
+  const hasPackDiscount = totalDiscount > 0;
+  // Code promo non cumulable avec les packs
+  const promoDiscount = promoState && !hasPackDiscount
+    ? parseFloat((totalPrice * promoState.pct / 100).toFixed(2))
+    : 0;
+  const total = totalPrice - totalDiscount - promoDiscount + shipping;
+
+  const handleApplyPromo = async () => {
+    if (!promoInput.trim()) return;
+    setPromoLoading(true);
+    setPromoError("");
+    setPromoState(null);
+    try {
+      const res = await fetch("/api/promo/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: promoInput.trim() }),
+      });
+      const data = await res.json();
+      if (data.valid) {
+        setPromoState({ code: promoInput.trim().toUpperCase(), pct: data.discountPct, label: data.description });
+      } else {
+        setPromoError(data.error ?? "Code invalide.");
+      }
+    } catch {
+      setPromoError("Erreur lors de la vérification.");
+    }
+    setPromoLoading(false);
+  };
 
   const handleCheckout = async () => {
     setLoading(true);
@@ -40,7 +72,7 @@ export default function PanierPage() {
       const res = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items: state.items }),
+        body: JSON.stringify({ items: state.items, promoCode: promoState && !hasPackDiscount ? promoState.code : undefined }),
       });
       const data = await res.json();
       if (data.url) {
@@ -160,6 +192,50 @@ export default function PanierPage() {
                   )}
                 </>
               )}
+
+              {/* Code promo */}
+              <div className="border-t border-stone-100 pt-3">
+                {promoState && !hasPackDiscount ? (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-green-600 text-sm">
+                      <CheckCircle2 className="w-4 h-4 shrink-0" />
+                      <span className="font-mono font-semibold">{promoState.code}</span>
+                      <span>(−{promoState.pct}%)</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-green-600 text-sm font-medium">−{promoDiscount.toFixed(2).replace(".", ",")} €</span>
+                      <button onClick={() => { setPromoState(null); setPromoInput(""); }} className="text-stone-300 hover:text-red-500 transition-colors">
+                        <XCircle className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={promoInput}
+                        onChange={e => { setPromoInput(e.target.value.toUpperCase()); setPromoError(""); }}
+                        onKeyDown={e => e.key === "Enter" && handleApplyPromo()}
+                        placeholder="Code promo"
+                        className="flex-1 border border-stone-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-bakery-black"
+                      />
+                      <button
+                        onClick={handleApplyPromo}
+                        disabled={promoLoading || !promoInput.trim()}
+                        className="flex items-center gap-1.5 bg-stone-100 hover:bg-stone-200 text-stone-700 text-sm font-medium px-4 py-2 rounded-xl transition-colors disabled:opacity-50"
+                      >
+                        <Tag className="w-3.5 h-3.5" />
+                        {promoLoading ? "…" : "Appliquer"}
+                      </button>
+                    </div>
+                    {promoError && <p className="text-red-500 text-xs mt-1.5">{promoError}</p>}
+                    {hasPackDiscount && promoState && (
+                      <p className="text-amber-600 text-xs mt-1.5">Non cumulable avec une réduction pack.</p>
+                    )}
+                  </div>
+                )}
+              </div>
 
               <div className="border-t border-stone-100 pt-3 flex justify-between font-bold text-lg text-bakery-black">
                 <span>Total</span>

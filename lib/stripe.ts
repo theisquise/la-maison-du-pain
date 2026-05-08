@@ -19,7 +19,7 @@ export type CheckoutItem = {
   stripeProductId?: string;
 };
 
-export async function createCheckoutSession(items: CheckoutItem[], siteUrl: string) {
+export async function createCheckoutSession(items: CheckoutItem[], siteUrl: string, promoDiscount?: { code: string; pct: number }) {
   const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = items.map((item) => ({
     price_data: {
       currency: "eur",
@@ -60,6 +60,19 @@ export async function createCheckoutSession(items: CheckoutItem[], siteUrl: stri
         currency: "eur",
         product_data: { name: `Réduction pack formations (${formationDiscountPct}%)` },
         unit_amount: -Math.round(formationTotal * formationDiscountPct / 100),
+      },
+      quantity: 1,
+    });
+  }
+
+  // Code promo (non cumulable avec les packs — vérifié côté serveur avant d'arriver ici)
+  if (promoDiscount) {
+    const subtotal = items.reduce((s, i) => s + Math.round(i.price * 100) * i.quantity, 0);
+    lineItems.push({
+      price_data: {
+        currency: "eur",
+        product_data: { name: `Code promo ${promoDiscount.code} (−${promoDiscount.pct}%)` },
+        unit_amount: -Math.round(subtotal * promoDiscount.pct / 100),
       },
       quantity: 1,
     });
