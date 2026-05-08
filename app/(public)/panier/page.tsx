@@ -11,8 +11,27 @@ export default function PanierPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const shipping = totalPrice > 50 ? 0 : 4.9;
-  const total = totalPrice + shipping;
+  // Livraison uniquement sur les produits physiques
+  const hasPhysical = state.items.some((i) => i.type === "product");
+  const physicalTotal = state.items.filter((i) => i.type === "product").reduce((s, i) => s + i.price * i.quantity, 0);
+  const shipping = !hasPhysical ? 0 : physicalTotal >= 50 ? 0 : 4.9;
+
+  // Réductions pack ebooks
+  const ebookItems = state.items.filter((i) => i.type === "ebook");
+  const ebookCount = ebookItems.reduce((s, i) => s + i.quantity, 0);
+  const ebookTotal = ebookItems.reduce((s, i) => s + i.price * i.quantity, 0);
+  const ebookDiscountPct = ebookCount >= 3 ? 20 : ebookCount >= 2 ? 10 : 0;
+  const ebookDiscount = parseFloat((ebookTotal * ebookDiscountPct / 100).toFixed(2));
+
+  // Réductions pack formations
+  const formationItems = state.items.filter((i) => i.type === "formation");
+  const formationCount = formationItems.reduce((s, i) => s + i.quantity, 0);
+  const formationTotal = formationItems.reduce((s, i) => s + i.price * i.quantity, 0);
+  const formationDiscountPct = formationCount >= 2 ? 10 : 0;
+  const formationDiscount = parseFloat((formationTotal * formationDiscountPct / 100).toFixed(2));
+
+  const totalDiscount = ebookDiscount + formationDiscount;
+  const total = totalPrice - totalDiscount + shipping;
 
   const handleCheckout = async () => {
     setLoading(true);
@@ -116,13 +135,32 @@ export default function PanierPage() {
                 <span>Sous-total ({state.items.reduce((s, i) => s + i.quantity, 0)} article{state.items.length > 1 ? "s" : ""})</span>
                 <span>{totalPrice.toFixed(2).replace(".", ",")} €</span>
               </div>
-              <div className="flex justify-between text-stone-500 text-sm">
-                <span>Livraison</span>
-                <span>{shipping === 0 ? <span className="text-green-600 font-medium">Gratuite</span> : `${shipping.toFixed(2).replace(".", ",")} €`}</span>
-              </div>
-              {shipping > 0 && (
-                <p className="text-xs text-stone-400">Livraison gratuite dès 50 € d'achat</p>
+
+              {ebookDiscount > 0 && (
+                <div className="flex justify-between text-green-600 text-sm">
+                  <span>Réduction pack ebooks ({ebookDiscountPct}%)</span>
+                  <span>−{ebookDiscount.toFixed(2).replace(".", ",")} €</span>
+                </div>
               )}
+              {formationDiscount > 0 && (
+                <div className="flex justify-between text-green-600 text-sm">
+                  <span>Réduction pack formations ({formationDiscountPct}%)</span>
+                  <span>−{formationDiscount.toFixed(2).replace(".", ",")} €</span>
+                </div>
+              )}
+
+              {hasPhysical && (
+                <>
+                  <div className="flex justify-between text-stone-500 text-sm">
+                    <span>Livraison</span>
+                    <span>{shipping === 0 ? <span className="text-green-600 font-medium">Gratuite</span> : `${shipping.toFixed(2).replace(".", ",")} €`}</span>
+                  </div>
+                  {shipping > 0 && (
+                    <p className="text-xs text-stone-400">Livraison gratuite dès 50 € d'achat</p>
+                  )}
+                </>
+              )}
+
               <div className="border-t border-stone-100 pt-3 flex justify-between font-bold text-lg text-bakery-black">
                 <span>Total</span>
                 <span>{total.toFixed(2).replace(".", ",")} €</span>
