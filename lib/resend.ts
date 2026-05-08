@@ -216,6 +216,37 @@ export async function sendDeliveryNotification(opts: {
   });
 }
 
+// ─── Email 5 : Bienvenue newsletter ──────────────────────────────────────────
+
+export async function sendNewsletterWelcome(opts: { to: string; unsubscribeUrl: string }) {
+  const { to, unsubscribeUrl } = opts;
+
+  const content = `
+    <h1 style="margin:0 0 8px;font-size:24px;color:#1c1917;">Bienvenue dans la famille&nbsp;! 🥐</h1>
+    <p style="margin:0 0 24px;color:#78716c;font-size:15px;">
+      Vous êtes maintenant inscrit(e) à la newsletter de <strong>${SITE_NAME}</strong>.
+      Vous recevrez en avant-première nos offres exclusives, nouvelles recettes et actualités de la boulangerie.
+    </p>
+
+    <div style="background:#fef3c7;border:1px solid #fde68a;border-radius:8px;padding:20px;margin-bottom:24px;">
+      <p style="margin:0 0 8px;font-weight:600;color:#92400e;font-size:14px;">🎁 En cadeau de bienvenue</p>
+      <p style="margin:0 0 16px;color:#92400e;font-size:13px;">Profitez de <strong>-10%</strong> sur votre première commande avec le code <strong style="font-family:monospace;background:#fff8e1;padding:2px 6px;border-radius:4px;">BIENVENUE10</strong></p>
+      ${btn(`${SITE_URL}/boutique`, "Découvrir la boutique")}
+    </div>
+
+    <p style="margin:0;color:#a8a29e;font-size:12px;">
+      Vous pouvez vous désabonner à tout moment en cliquant <a href="${unsubscribeUrl}" style="color:#a8a29e;">ici</a>.
+    </p>
+  `;
+
+  return resend.emails.send({
+    from: FROM_EMAIL,
+    to,
+    subject: `🍞 Bienvenue chez ${SITE_NAME} !`,
+    html: baseLayout(content),
+  });
+}
+
 // ─── Email 4 : Lien magique (connexion) ───────────────────────────────────────
 
 export async function sendMagicLink(opts: { to: string; magicLink: string }) {

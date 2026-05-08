@@ -107,10 +107,17 @@ export default function Footer() {
 
         {/* Bas du footer */}
         <div className="border-t border-stone-800 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-stone-500 text-sm">{siteConfig.footer.copyright}</p>
+          <div className="flex flex-col sm:flex-row items-center gap-3">
+            <p className="text-stone-500 text-sm">{siteConfig.footer.copyright}</p>
+            <div className="flex items-center gap-3 text-stone-500 text-xs">
+              <span className="hidden sm:inline">·</span>
+              <Link href="/mentions-legales" className="hover:text-stone-300 transition-colors">Mentions légales</Link>
+              <span>·</span>
+              <Link href="/cgv" className="hover:text-stone-300 transition-colors">CGV</Link>
+            </div>
+          </div>
           <div className="flex items-center gap-4">
             <span className="text-stone-500 text-xs">{siteConfig.footer.paymentText}</span>
-            {/* Icônes paiement */}
             <div className="flex items-center gap-2">
               {["Visa", "MC", "Amex", "CB"].map((card) => (
                 <span key={card} className="bg-stone-800 text-stone-400 text-xs px-2 py-1 rounded font-mono">
