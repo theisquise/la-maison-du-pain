@@ -122,7 +122,92 @@ export async function sendOrderConfirmation(opts: {
   });
 }
 
-// ─── Email 2 : Lien magique (connexion) ───────────────────────────────────────
+// ─── Email 2 : Expédition ─────────────────────────────────────────────────────
+
+export async function sendShippingNotification(opts: {
+  to: string;
+  customerName: string;
+  orderRef: string;
+  items: OrderItem[];
+  total: number;
+  trackingNumber?: string;
+}) {
+  const { to, customerName, orderRef, items, total, trackingNumber } = opts;
+
+  const itemRows = items
+    .filter((i) => i.type === "product")
+    .map(
+      (i) =>
+        `<tr>
+          <td style="padding:8px 0;border-bottom:1px solid #f5f5f4;font-size:14px;color:#1c1917;">${i.name}</td>
+          <td style="padding:8px 0;border-bottom:1px solid #f5f5f4;font-size:14px;color:#57534e;text-align:right;">${i.price.toFixed(2)} €</td>
+        </tr>`
+    )
+    .join("");
+
+  const content = `
+    <h1 style="margin:0 0 4px;font-size:24px;color:#1c1917;">Votre commande est en route&nbsp;! 🚚</h1>
+    <p style="margin:0 0 24px;color:#78716c;font-size:15px;">Bonjour ${customerName}, votre colis vient d'être expédié.</p>
+
+    <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:20px;margin-bottom:24px;">
+      <p style="margin:0 0 8px;font-weight:600;color:#166534;font-size:14px;">📦 Colis expédié</p>
+      <p style="margin:0;color:#166534;font-size:13px;">Livraison estimée sous 24-48h ouvrés.</p>
+      ${trackingNumber ? `<p style="margin:12px 0 0;color:#166534;font-size:13px;">Numéro de suivi : <strong style="font-family:monospace;">${trackingNumber}</strong></p>` : ""}
+    </div>
+
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
+      <tr><td colspan="2" style="padding-bottom:8px;font-size:12px;color:#a8a29e;text-transform:uppercase;letter-spacing:0.5px;">Articles expédiés</td></tr>
+      ${itemRows}
+      <tr>
+        <td style="padding-top:12px;font-weight:700;font-size:15px;color:#1c1917;">Total</td>
+        <td style="padding-top:12px;font-weight:700;font-size:15px;color:#1c1917;text-align:right;">${total.toFixed(2)} €</td>
+      </tr>
+    </table>
+
+    <p style="margin:24px 0 8px;color:#57534e;font-size:13px;">Référence : <code style="background:#f5f5f4;padding:2px 6px;border-radius:4px;font-size:12px;">${orderRef.slice(0, 24)}…</code></p>
+    <p style="margin:0;color:#a8a29e;font-size:12px;">Un problème ? <a href="${SITE_URL}/contact" style="color:#a8a29e;">Contactez-nous</a>.</p>
+  `;
+
+  return resend.emails.send({
+    from: FROM_EMAIL,
+    to,
+    subject: `📦 Votre colis est en route — ${SITE_NAME}`,
+    html: baseLayout(content),
+  });
+}
+
+// ─── Email 3 : Livraison confirmée ────────────────────────────────────────────
+
+export async function sendDeliveryNotification(opts: {
+  to: string;
+  customerName: string;
+  orderRef: string;
+}) {
+  const { to, customerName, orderRef } = opts;
+
+  const content = `
+    <h1 style="margin:0 0 4px;font-size:24px;color:#1c1917;">Votre colis est arrivé&nbsp;! ✅</h1>
+    <p style="margin:0 0 24px;color:#78716c;font-size:15px;">Bonjour ${customerName}, nous espérons que votre commande vous a bien été livrée.</p>
+
+    <div style="background:#fefce8;border:1px solid #fef08a;border-radius:8px;padding:20px;margin-bottom:24px;">
+      <p style="margin:0 0 8px;font-weight:600;color:#713f12;font-size:14px;">⭐ Vous avez aimé ?</p>
+      <p style="margin:0 0 16px;color:#854d0e;font-size:13px;">Votre avis compte beaucoup pour nous et aide d'autres clients à découvrir nos produits.</p>
+      ${btn(`${SITE_URL}/contact`, "Laisser un avis")}
+    </div>
+
+    <p style="margin:24px 0 8px;color:#57534e;font-size:13px;">Référence : <code style="background:#f5f5f4;padding:2px 6px;border-radius:4px;font-size:12px;">${orderRef.slice(0, 24)}…</code></p>
+    <p style="margin:0;color:#a8a29e;font-size:12px;">Un problème avec votre commande ? <a href="${SITE_URL}/contact" style="color:#a8a29e;">Contactez-nous</a>, nous trouverons une solution.</p>
+  `;
+
+  return resend.emails.send({
+    from: FROM_EMAIL,
+    to,
+    subject: `✅ Commande livrée — ${SITE_NAME}`,
+    html: baseLayout(content),
+  });
+}
+
+// ─── Email 4 : Lien magique (connexion) ───────────────────────────────────────
 
 export async function sendMagicLink(opts: { to: string; magicLink: string }) {
   const { to, magicLink } = opts;
