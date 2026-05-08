@@ -75,14 +75,14 @@ export async function POST(req: NextRequest) {
       console.log(`[WEBHOOK] Client créé/mis à jour: ${customer.id}`);
 
       // 2. Sauvegarder la commande
-      createOrder({
+      const order = createOrder({
         customerId: customer.id,
         stripeSessionId: session.id,
         items: orderItems,
         totalAmount,
         status: "paid",
       });
-      console.log(`[WEBHOOK] Commande sauvegardée`);
+      console.log(`[WEBHOOK] Commande sauvegardée — ${order.orderNumber}`);
 
       // 3. Générer un magic link pour accéder directement à l'espace client
       const magicLink = createMagicLink(customer.id);
@@ -95,6 +95,7 @@ export async function POST(req: NextRequest) {
           to: email,
           customerName: name,
           orderRef: session.id,
+          orderNumber: order.orderNumber,
           items: orderItems,
           total: totalAmount,
           magicLink,

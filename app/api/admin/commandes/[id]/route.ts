@@ -35,6 +35,7 @@ export async function PATCH(
             to: customer.email,
             customerName: customer.name,
             orderRef: updated.stripeSessionId,
+            orderNumber: updated.orderNumber,
             items: updated.items,
             total: updated.totalAmount,
             trackingNumber: updated.trackingNumber,
@@ -44,6 +45,7 @@ export async function PATCH(
             to: customer.email,
             customerName: customer.name,
             orderRef: updated.stripeSessionId,
+            orderNumber: updated.orderNumber,
           });
         }
       } catch (emailErr) {

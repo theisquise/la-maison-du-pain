@@ -235,6 +235,9 @@ export default function CommandesPage() {
                 >
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 flex-wrap">
+                      <span className="text-xs font-mono text-amber-500 bg-stone-700 px-2 py-0.5 rounded">
+                        {order.orderNumber ?? "—"}
+                      </span>
                       <p className="text-white font-medium">
                         {order.customer?.name ?? "Client inconnu"}
                       </p>

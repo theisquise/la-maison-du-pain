@@ -22,6 +22,7 @@ export type OrderItem = {
 
 export type Order = {
   id: string;
+  orderNumber: string;
   customerId: string;
   stripeSessionId: string;
   items: OrderItem[];
@@ -109,11 +110,22 @@ export function getAllCustomers(): Customer[] {
 
 // ─── Orders ───────────────────────────────────────────────────────────────────
 
-export function createOrder(data: Omit<Order, "id" | "createdAt">): Order {
+function generateOrderNumber(db: DB): string {
+  const nums = db.orders
+    .map((o) => o.orderNumber)
+    .filter(Boolean)
+    .map((n) => parseInt(n.replace("CMD-", ""), 10))
+    .filter((n) => !isNaN(n));
+  const next = nums.length > 0 ? Math.max(...nums) + 1 : 1;
+  return `CMD-${String(next).padStart(4, "0")}`;
+}
+
+export function createOrder(data: Omit<Order, "id" | "orderNumber" | "createdAt">): Order {
   const db = readDB();
   const order: Order = {
     ...data,
     id: "ord_" + crypto.randomBytes(8).toString("hex"),
+    orderNumber: generateOrderNumber(db),
     createdAt: new Date().toISOString(),
   };
   db.orders.push(order);

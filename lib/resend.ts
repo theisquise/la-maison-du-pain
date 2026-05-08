@@ -61,11 +61,12 @@ export async function sendOrderConfirmation(opts: {
   to: string;
   customerName: string;
   orderRef: string;
+  orderNumber: string;
   items: OrderItem[];
   total: number;
   magicLink: string;
 }) {
-  const { to, customerName, orderRef, items, total, magicLink } = opts;
+  const { to, customerName, orderRef, orderNumber, items, total, magicLink } = opts;
 
   const hasDigital = items.some((i) => i.type !== "product");
   const hasPhysical = items.some((i) => i.type === "product");
@@ -81,6 +82,9 @@ export async function sendOrderConfirmation(opts: {
     .join("");
 
   const content = `
+    <div style="display:inline-block;background:#f5f5f4;border-radius:6px;padding:4px 12px;margin-bottom:16px;">
+      <span style="font-size:13px;color:#78716c;font-weight:600;">Commande ${orderNumber}</span>
+    </div>
     <h1 style="margin:0 0 4px;font-size:24px;color:#1c1917;">Merci pour votre commande&nbsp;!</h1>
     <p style="margin:0 0 24px;color:#78716c;font-size:15px;">Bonjour ${customerName}, votre paiement a bien été reçu.</p>
 
@@ -110,14 +114,13 @@ export async function sendOrderConfirmation(opts: {
         : ""
     }
 
-    <p style="margin:24px 0 8px;color:#57534e;font-size:13px;">Référence de commande : <code style="background:#f5f5f4;padding:2px 6px;border-radius:4px;font-size:12px;">${orderRef.slice(0, 24)}…</code></p>
     <p style="margin:0;color:#a8a29e;font-size:12px;">Un problème ? Répondez à cet email ou <a href="${SITE_URL}/contact" style="color:#a8a29e;">contactez-nous</a>.</p>
   `;
 
   return resend.emails.send({
     from: FROM_EMAIL,
     to,
-    subject: `✅ Commande confirmée — ${SITE_NAME}`,
+    subject: `✅ Commande ${orderNumber} confirmée — ${SITE_NAME}`,
     html: baseLayout(content),
   });
 }
@@ -128,11 +131,12 @@ export async function sendShippingNotification(opts: {
   to: string;
   customerName: string;
   orderRef: string;
+  orderNumber: string;
   items: OrderItem[];
   total: number;
   trackingNumber?: string;
 }) {
-  const { to, customerName, orderRef, items, total, trackingNumber } = opts;
+  const { to, customerName, orderNumber, items, total, trackingNumber } = opts;
 
   const itemRows = items
     .filter((i) => i.type === "product")
@@ -146,6 +150,9 @@ export async function sendShippingNotification(opts: {
     .join("");
 
   const content = `
+    <div style="display:inline-block;background:#f5f5f4;border-radius:6px;padding:4px 12px;margin-bottom:16px;">
+      <span style="font-size:13px;color:#78716c;font-weight:600;">Commande ${orderNumber}</span>
+    </div>
     <h1 style="margin:0 0 4px;font-size:24px;color:#1c1917;">Votre commande est en route&nbsp;! 🚚</h1>
     <p style="margin:0 0 24px;color:#78716c;font-size:15px;">Bonjour ${customerName}, votre colis vient d'être expédié.</p>
 
@@ -170,7 +177,7 @@ export async function sendShippingNotification(opts: {
   return resend.emails.send({
     from: FROM_EMAIL,
     to,
-    subject: `📦 Votre colis est en route — ${SITE_NAME}`,
+    subject: `📦 Commande ${orderNumber} expédiée — ${SITE_NAME}`,
     html: baseLayout(content),
   });
 }
@@ -181,10 +188,14 @@ export async function sendDeliveryNotification(opts: {
   to: string;
   customerName: string;
   orderRef: string;
+  orderNumber: string;
 }) {
-  const { to, customerName, orderRef } = opts;
+  const { to, customerName, orderNumber } = opts;
 
   const content = `
+    <div style="display:inline-block;background:#f5f5f4;border-radius:6px;padding:4px 12px;margin-bottom:16px;">
+      <span style="font-size:13px;color:#78716c;font-weight:600;">Commande ${orderNumber}</span>
+    </div>
     <h1 style="margin:0 0 4px;font-size:24px;color:#1c1917;">Votre colis est arrivé&nbsp;! ✅</h1>
     <p style="margin:0 0 24px;color:#78716c;font-size:15px;">Bonjour ${customerName}, nous espérons que votre commande vous a bien été livrée.</p>
 
@@ -200,7 +211,7 @@ export async function sendDeliveryNotification(opts: {
   return resend.emails.send({
     from: FROM_EMAIL,
     to,
-    subject: `✅ Commande livrée — ${SITE_NAME}`,
+    subject: `✅ Commande ${orderNumber} livrée — ${SITE_NAME}`,
     html: baseLayout(content),
   });
 }
