@@ -8,6 +8,21 @@ import { useCart } from "@/lib/cart-context";
 export default function CartDrawer() {
   const { state, closeCart, removeItem, updateQuantity, totalPrice } = useCart();
 
+  const ebookItems = state.items.filter((i) => i.type === "ebook");
+  const ebookCount = ebookItems.reduce((s, i) => s + i.quantity, 0);
+  const ebookTotal = ebookItems.reduce((s, i) => s + i.price * i.quantity, 0);
+  const ebookDiscountPct = ebookCount >= 3 ? 20 : ebookCount >= 2 ? 10 : 0;
+  const ebookDiscount = parseFloat((ebookTotal * ebookDiscountPct / 100).toFixed(2));
+
+  const formationItems = state.items.filter((i) => i.type === "formation");
+  const formationCount = formationItems.reduce((s, i) => s + i.quantity, 0);
+  const formationTotal = formationItems.reduce((s, i) => s + i.price * i.quantity, 0);
+  const formationDiscountPct = formationCount >= 2 ? 10 : 0;
+  const formationDiscount = parseFloat((formationTotal * formationDiscountPct / 100).toFixed(2));
+
+  const totalDiscount = ebookDiscount + formationDiscount;
+  const finalTotal = totalPrice - totalDiscount;
+
   return (
     <>
       {/* Overlay */}
@@ -110,9 +125,21 @@ export default function CartDrawer() {
               <span>Sous-total</span>
               <span>{totalPrice.toFixed(2).replace(".", ",")} €</span>
             </div>
+            {ebookDiscount > 0 && (
+              <div className="flex justify-between text-sm text-green-600">
+                <span>Pack ebooks ({ebookDiscountPct}%)</span>
+                <span>−{ebookDiscount.toFixed(2).replace(".", ",")} €</span>
+              </div>
+            )}
+            {formationDiscount > 0 && (
+              <div className="flex justify-between text-sm text-green-600">
+                <span>Pack formations ({formationDiscountPct}%)</span>
+                <span>−{formationDiscount.toFixed(2).replace(".", ",")} €</span>
+              </div>
+            )}
             <div className="flex justify-between font-bold text-lg">
               <span>Total</span>
-              <span>{totalPrice.toFixed(2).replace(".", ",")} €</span>
+              <span>{finalTotal.toFixed(2).replace(".", ",")} €</span>
             </div>
             <Link
               href="/panier"
