@@ -1,7 +1,13 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Heart, Wheat, Award, Users } from "lucide-react";
-import { siteConfig } from "@/data/site-config";
+
+export const revalidate = 3600
+
+export const metadata = {
+  title: 'Notre Histoire',
+  description: 'Depuis 1987, La Maison du Pain perpétue la tradition de la boulangerie artisanale française.',
+}
 
 const values = [
   {
