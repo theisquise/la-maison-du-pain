@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
       resend.emails.send({
         from: FROM_EMAIL,
         to: adminEmail,
-        reply_to: email,
+        replyTo: email,
         subject: `📬 Nouveau message — ${subjectLabel}`,
         html: `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"/></head>
 <body style="font-family:Arial,sans-serif;background:#f5f5f4;padding:40px 16px;">
