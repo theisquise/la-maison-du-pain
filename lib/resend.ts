@@ -1,6 +1,9 @@
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+function getResend() {
+  if (!process.env.RESEND_API_KEY) throw new Error("RESEND_API_KEY not set");
+  return new Resend(process.env.RESEND_API_KEY);
+}
 
 export const FROM_EMAIL = process.env.RESEND_FROM ?? "onboarding@resend.dev";
 export const SITE_NAME = "La Maison du Pain";
@@ -117,7 +120,7 @@ export async function sendOrderConfirmation(opts: {
     <p style="margin:0;color:#a8a29e;font-size:12px;">Un problème ? Répondez à cet email ou <a href="${SITE_URL}/contact" style="color:#a8a29e;">contactez-nous</a>.</p>
   `;
 
-  return resend.emails.send({
+  return getResend().emails.send({
     from: FROM_EMAIL,
     to,
     subject: `✅ Commande ${orderNumber} confirmée — ${SITE_NAME}`,
@@ -174,7 +177,7 @@ export async function sendShippingNotification(opts: {
     <p style="margin:0;color:#a8a29e;font-size:12px;">Un problème ? <a href="${SITE_URL}/contact" style="color:#a8a29e;">Contactez-nous</a>.</p>
   `;
 
-  return resend.emails.send({
+  return getResend().emails.send({
     from: FROM_EMAIL,
     to,
     subject: `📦 Commande ${orderNumber} expédiée — ${SITE_NAME}`,
@@ -208,7 +211,7 @@ export async function sendDeliveryNotification(opts: {
     <p style="margin:0;color:#a8a29e;font-size:12px;">Un problème avec votre commande ? <a href="${SITE_URL}/contact" style="color:#a8a29e;">Contactez-nous</a>, nous trouverons une solution.</p>
   `;
 
-  return resend.emails.send({
+  return getResend().emails.send({
     from: FROM_EMAIL,
     to,
     subject: `✅ Commande ${orderNumber} livrée — ${SITE_NAME}`,
@@ -230,7 +233,8 @@ export async function sendNewsletterWelcome(opts: { to: string; unsubscribeUrl: 
 
     <div style="background:#fef3c7;border:1px solid #fde68a;border-radius:8px;padding:20px;margin-bottom:24px;">
       <p style="margin:0 0 8px;font-weight:600;color:#92400e;font-size:14px;">🎁 En cadeau de bienvenue</p>
-      <p style="margin:0 0 16px;color:#92400e;font-size:13px;">Profitez de <strong>-10%</strong> sur votre première commande avec le code <strong style="font-family:monospace;background:#fff8e1;padding:2px 6px;border-radius:4px;">BIENVENUE10</strong></p>
+      <p style="margin:0 0 4px;color:#92400e;font-size:13px;">Profitez de <strong>-5%</strong> sur votre première commande avec le code <strong style="font-family:monospace;background:#fff8e1;padding:2px 6px;border-radius:4px;">BIENVENUE5</strong></p>
+      <p style="margin:0 0 16px;color:#b45309;font-size:11px;">Non cumulable avec d'autres offres (packs ebooks, promotions en cours).</p>
       ${btn(`${SITE_URL}/boutique`, "Découvrir la boutique")}
     </div>
 
@@ -239,7 +243,7 @@ export async function sendNewsletterWelcome(opts: { to: string; unsubscribeUrl: 
     </p>
   `;
 
-  return resend.emails.send({
+  return getResend().emails.send({
     from: FROM_EMAIL,
     to,
     subject: `🍞 Bienvenue chez ${SITE_NAME} !`,
@@ -261,7 +265,7 @@ export async function sendMagicLink(opts: { to: string; magicLink: string }) {
     <p style="margin:0;color:#a8a29e;font-size:12px;">Si vous n'avez pas demandé cette connexion, ignorez cet email.</p>
   `;
 
-  return resend.emails.send({
+  return getResend().emails.send({
     from: FROM_EMAIL,
     to,
     subject: `🔐 Votre lien de connexion — ${SITE_NAME}`,
