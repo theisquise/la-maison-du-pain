@@ -40,10 +40,6 @@ export async function createCheckoutSession(items: CheckoutItem[], siteUrl: stri
     success_url: `${siteUrl}/succes?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${siteUrl}/panier`,
     billing_address_collection: "auto",
-    shipping_address_collection: {
-      allowed_countries: ["FR", "BE", "CH", "LU", "CA"],
-    },
-    phone_number_collection: { enabled: true },
     metadata: {
       items: JSON.stringify(items.map((i) => ({ id: i.id, type: i.type }))),
     },
