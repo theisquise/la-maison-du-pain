@@ -3,8 +3,6 @@ import { Resend } from "resend";
 import { FROM_EMAIL, SITE_NAME, SITE_URL } from "@/lib/resend";
 import { getConfig } from "@/lib/admin-data";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 const fromDomain = FROM_EMAIL.split("@")[1] ?? "boulangerie-alex.com";
 const CONTACT_FROM = `contact@${fromDomain}`;
 
@@ -46,6 +44,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Champs manquants" }, { status: 400 });
   }
 
+  const resend = new Resend(process.env.RESEND_API_KEY);
   const { siteConfig } = getConfig();
   const adminEmail = process.env.CONTACT_EMAIL ?? siteConfig.contact.email ?? FROM_EMAIL;
   const subjectLabel = SUBJECT_LABELS[subject] ?? subject;
