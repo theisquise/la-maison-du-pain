@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Plus, Pencil, Trash2, X, Check, AlertCircle, Star, MessageSquare } from 'lucide-react'
+import { Plus, Pencil, Trash2, X, Check, AlertCircle, Star, MessageSquare, Clock } from 'lucide-react'
 import type { Testimonial } from '@/data/testimonials'
 
 const EMPTY: Partial<Testimonial> = {
@@ -90,6 +90,20 @@ export default function AdminAvisPage() {
     }
   }
 
+  async function handleApprove(id: string) {
+    const res = await fetch(`/api/admin/avis/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pending: false }),
+    })
+    if (res.ok) {
+      showToast('Avis publié !')
+      load()
+    } else {
+      showToast('Erreur', false)
+    }
+  }
+
   function set(field: keyof Testimonial, value: unknown) {
     setEditing((prev) => prev ? { ...prev, [field]: value } : prev)
   }
@@ -120,14 +134,61 @@ export default function AdminAvisPage() {
 
       {loading ? (
         <div className="py-16 text-center text-stone-400">Chargement…</div>
-      ) : items.length === 0 ? (
-        <div className="py-16 text-center text-stone-400">
-          <MessageSquare size={40} className="mx-auto mb-3 opacity-30" />
-          <p>Aucun témoignage</p>
-        </div>
       ) : (
+        <>
+          {/* Avis en attente de modération */}
+          {items.filter((t) => t.pending).length > 0 && (
+            <div className="mb-8">
+              <h2 className="flex items-center gap-2 text-base font-semibold text-orange-400 mb-3">
+                <Clock size={16} /> En attente de modération ({items.filter((t) => t.pending).length})
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {items.filter((t) => t.pending).map((t) => (
+                  <div key={t.id} className="bg-orange-950/30 border border-orange-800/40 rounded-xl p-5">
+                    <div className="flex items-start justify-between gap-3 mb-3">
+                      <div>
+                        <p className="font-semibold text-white text-sm">{t.name}</p>
+                        <div className="flex mt-0.5">
+                          {[1, 2, 3, 4, 5].map((s) => (
+                            <Star key={s} size={11} className={s <= t.rating ? 'text-amber-400 fill-amber-400' : 'text-stone-600 fill-stone-600'} />
+                          ))}
+                        </div>
+                      </div>
+                      <button onClick={() => setDeleteId(t.id)} className="p-1.5 rounded-lg text-stone-500 hover:text-red-400 hover:bg-red-900/20 transition-colors">
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                    {t.product && <p className="text-xs text-stone-400 mb-1">Produit : {t.product}</p>}
+                    <p className="text-sm text-stone-300 italic mb-4">&ldquo;{t.text}&rdquo;</p>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleApprove(t.id)}
+                        className="flex items-center gap-1.5 bg-green-700 hover:bg-green-600 text-white text-xs px-3 py-1.5 rounded-lg font-medium transition-colors"
+                      >
+                        <Check size={13} /> Publier
+                      </button>
+                      <button
+                        onClick={() => setDeleteId(t.id)}
+                        className="flex items-center gap-1.5 bg-stone-700 hover:bg-red-900 text-stone-300 hover:text-red-300 text-xs px-3 py-1.5 rounded-lg font-medium transition-colors"
+                      >
+                        <Trash2 size={13} /> Refuser
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Avis publiés */}
+          {items.filter((t) => !t.pending).length === 0 ? (
+            <div className="py-16 text-center text-stone-400">
+              <MessageSquare size={40} className="mx-auto mb-3 opacity-30" />
+              <p>Aucun témoignage publié</p>
+            </div>
+          ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {items.map((t) => (
+          {items.filter((t) => !t.pending).map((t) => (
             <div key={t.id} className="bg-white rounded-xl border border-stone-200 p-5">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
@@ -155,7 +216,9 @@ export default function AdminAvisPage() {
               </div>
             </div>
           ))}
-        </div>
+          </div>
+          )}
+        </>
       )}
 
       {editing && (

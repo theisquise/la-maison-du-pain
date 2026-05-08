@@ -202,7 +202,7 @@ export async function sendDeliveryNotification(opts: {
     <div style="background:#fefce8;border:1px solid #fef08a;border-radius:8px;padding:20px;margin-bottom:24px;">
       <p style="margin:0 0 8px;font-weight:600;color:#713f12;font-size:14px;">⭐ Vous avez aimé ?</p>
       <p style="margin:0 0 16px;color:#854d0e;font-size:13px;">Votre avis compte beaucoup pour nous et aide d'autres clients à découvrir nos produits.</p>
-      ${btn(`${SITE_URL}/contact`, "Laisser un avis")}
+      ${btn(`${SITE_URL}/laisser-un-avis`, "Laisser un avis")}
     </div>
 
     <p style="margin:0;color:#a8a29e;font-size:12px;">Un problème avec votre commande ? <a href="${SITE_URL}/contact" style="color:#a8a29e;">Contactez-nous</a>, nous trouverons une solution.</p>

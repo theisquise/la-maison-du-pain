@@ -12,6 +12,7 @@ export type Testimonial = {
   rating: number;
   product?: string; // Produit acheté
   date?: string;
+  pending?: boolean; // true = en attente de modération admin
 };
 
 export const testimonials: Testimonial[] = [
