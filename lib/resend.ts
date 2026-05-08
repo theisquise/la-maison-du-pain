@@ -164,7 +164,6 @@ export async function sendShippingNotification(opts: {
       </tr>
     </table>
 
-    <p style="margin:24px 0 8px;color:#57534e;font-size:13px;">Référence : <code style="background:#f5f5f4;padding:2px 6px;border-radius:4px;font-size:12px;">${orderRef.slice(0, 24)}…</code></p>
     <p style="margin:0;color:#a8a29e;font-size:12px;">Un problème ? <a href="${SITE_URL}/contact" style="color:#a8a29e;">Contactez-nous</a>.</p>
   `;
 
@@ -195,7 +194,6 @@ export async function sendDeliveryNotification(opts: {
       ${btn(`${SITE_URL}/contact`, "Laisser un avis")}
     </div>
 
-    <p style="margin:24px 0 8px;color:#57534e;font-size:13px;">Référence : <code style="background:#f5f5f4;padding:2px 6px;border-radius:4px;font-size:12px;">${orderRef.slice(0, 24)}…</code></p>
     <p style="margin:0;color:#a8a29e;font-size:12px;">Un problème avec votre commande ? <a href="${SITE_URL}/contact" style="color:#a8a29e;">Contactez-nous</a>, nous trouverons une solution.</p>
   `;
 
