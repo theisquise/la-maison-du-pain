@@ -5,6 +5,9 @@ import { getConfig } from "@/lib/admin-data";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
+const fromDomain = FROM_EMAIL.split("@")[1] ?? "boulangerie-alex.com";
+const CONTACT_FROM = `contact@${fromDomain}`;
+
 const ipWindow = new Map<string, { count: number; windowStart: number }>();
 const MAX_PER_WINDOW = 3;
 const WINDOW_MS = 60 * 60 * 1000;
@@ -51,7 +54,7 @@ export async function POST(req: NextRequest) {
     await Promise.all([
       // Email à l'admin
       resend.emails.send({
-        from: FROM_EMAIL,
+        from: CONTACT_FROM,
         to: adminEmail,
         replyTo: email,
         subject: `📬 Nouveau message — ${subjectLabel}`,
@@ -73,7 +76,7 @@ export async function POST(req: NextRequest) {
       }),
       // Confirmation au visiteur
       resend.emails.send({
-        from: FROM_EMAIL,
+        from: CONTACT_FROM,
         to: email,
         subject: `✅ Message bien reçu — ${SITE_NAME}`,
         html: `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"/></head>
