@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Download, ShoppingBag, LogOut, BookOpen, Video, Package, Loader2 } from "lucide-react";
+import { Download, ShoppingBag, LogOut, BookOpen, Video, Package, Loader2, Truck, CheckCircle } from "lucide-react";
 import type { Customer, Order } from "@/lib/customer-data";
 
 type MeResponse = { customer: Customer; orders: Order[] };
@@ -78,7 +78,9 @@ export default function MonComptePage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-10">
         <div>
-          <h1 className="font-serif text-3xl font-bold text-bakery-black">Mon espace client</h1>
+          <h1 className="font-serif text-3xl font-bold text-bakery-black">
+            Bonjour, {customer.name.split(" ")[0]} 👋
+          </h1>
           <p className="text-stone-500 mt-1">{customer.email}</p>
         </div>
         <button
@@ -153,18 +155,37 @@ export default function MonComptePage() {
               <div key={order.id} className="bg-white border border-stone-100 rounded-2xl p-5 shadow-sm">
                 <div className="flex items-center justify-between mb-3">
                   <div>
-                    <p className="text-sm font-medium text-bakery-black">
-                      Commande du {formatDate(order.createdAt)}
-                    </p>
-                    <p className="text-xs text-stone-400 font-mono mt-0.5">
-                      {order.stripeSessionId.slice(0, 20)}…
-                    </p>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {order.orderNumber && (
+                        <span className="text-xs font-mono font-semibold text-bakery-gold bg-stone-50 border border-stone-200 px-2 py-0.5 rounded">
+                          {order.orderNumber}
+                        </span>
+                      )}
+                      <p className="text-sm font-medium text-bakery-black">
+                        {formatDate(order.createdAt)}
+                      </p>
+                    </div>
+                    {order.trackingNumber && (
+                      <p className="text-xs text-stone-500 mt-1 flex items-center gap-1">
+                        <Truck className="w-3 h-3" /> Suivi : <span className="font-mono">{order.trackingNumber}</span>
+                      </p>
+                    )}
                   </div>
-                  <div className="text-right">
+                  <div className="text-right shrink-0">
                     <p className="font-bold text-bakery-black">{formatPrice(order.totalAmount)}</p>
-                    <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
-                      ✓ Payée
-                    </span>
+                    {order.status === "delivered" ? (
+                      <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full inline-flex items-center gap-1">
+                        <CheckCircle className="w-3 h-3" /> Livrée
+                      </span>
+                    ) : order.status === "shipped" ? (
+                      <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full inline-flex items-center gap-1">
+                        <Truck className="w-3 h-3" /> Expédiée
+                      </span>
+                    ) : (
+                      <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+                        ✓ Payée
+                      </span>
+                    )}
                   </div>
                 </div>
                 <div className="border-t border-stone-50 pt-3 space-y-1.5">

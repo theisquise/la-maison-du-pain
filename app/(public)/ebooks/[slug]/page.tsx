@@ -6,13 +6,22 @@ import { getFormations } from '@/lib/admin-data'
 import { levelLabels } from '@/data/formations'
 import ProductCard from '@/components/ProductCard'
 import EbookAddToCartButton from './AddToCartButton'
+import ProductReviews from '@/components/ProductReviews'
 
 export const revalidate = 30
 
 export async function generateMetadata({ params }: { params: { slug: string } }) {
   const ebook = getFormations().find((f) => f.id === params.slug && f.type === 'ebook')
   if (!ebook) return {}
-  return { title: ebook.name, description: ebook.shortDescription }
+  return {
+    title: ebook.name,
+    description: ebook.shortDescription,
+    openGraph: {
+      title: ebook.name,
+      description: ebook.shortDescription,
+      images: ebook.image ? [{ url: ebook.image, width: 800, height: 600, alt: ebook.name }] : [],
+    },
+  }
 }
 
 function StarRating({ rating, count }: { rating: number; count: number }) {
@@ -126,6 +135,8 @@ export default function EbookPage({ params }: { params: { slug: string } }) {
           </div>
         </div>
       </div>
+
+      <ProductReviews productName={ebook.name} />
 
       {/* Autres ebooks */}
       {related.length > 0 && (

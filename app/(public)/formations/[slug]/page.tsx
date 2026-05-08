@@ -6,13 +6,22 @@ import { getFormations } from '@/lib/admin-data'
 import { levelLabels } from '@/data/formations'
 import ProductCard from '@/components/ProductCard'
 import FormationAddToCartButton from './AddToCartButton'
+import ProductReviews from '@/components/ProductReviews'
 
 export const revalidate = 30
 
 export async function generateMetadata({ params }: { params: { slug: string } }) {
   const formation = getFormations().find((f) => f.id === params.slug && f.type === 'formation')
   if (!formation) return {}
-  return { title: formation.name, description: formation.shortDescription }
+  return {
+    title: formation.name,
+    description: formation.shortDescription,
+    openGraph: {
+      title: formation.name,
+      description: formation.shortDescription,
+      images: formation.image ? [{ url: formation.image, width: 800, height: 600, alt: formation.name }] : [],
+    },
+  }
 }
 
 function StarRating({ rating, count }: { rating: number; count: number }) {
@@ -131,6 +140,8 @@ export default function FormationPage({ params }: { params: { slug: string } }) 
           </div>
         </div>
       </div>
+
+      <ProductReviews productName={formation.name} />
 
       {/* Autres formations */}
       {related.length > 0 && (

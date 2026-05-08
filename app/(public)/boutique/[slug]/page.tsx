@@ -6,6 +6,7 @@ import { getProducts } from '@/lib/admin-data'
 import { productCategories } from '@/data/products'
 import ProductCard from '@/components/ProductCard'
 import AddToCartButton from './AddToCartButton'
+import ProductReviews from '@/components/ProductReviews'
 
 export const revalidate = 30
 
@@ -15,6 +16,11 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   return {
     title: product.name,
     description: product.description,
+    openGraph: {
+      title: product.name,
+      description: product.description,
+      images: product.image ? [{ url: product.image, width: 800, height: 600, alt: product.name }] : [],
+    },
   }
 }
 
@@ -150,6 +156,8 @@ export default function ProductPage({ params }: { params: { slug: string } }) {
           </div>
         </div>
       </div>
+
+      <ProductReviews productName={product.name} />
 
       {/* Produits similaires */}
       {related.length > 0 && (
