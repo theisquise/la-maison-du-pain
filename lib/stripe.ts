@@ -19,7 +19,11 @@ export type CheckoutItem = {
   stripeProductId?: string;
 };
 
-export async function createCheckoutSession(items: CheckoutItem[], siteUrl: string, promoDiscount?: { code: string; pct: number; email?: string }) {
+export async function createCheckoutSession(
+  items: CheckoutItem[],
+  siteUrl: string,
+  promoDiscount?: { code: string; pct: number; email?: string }
+) {
   const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = items.map((item) => ({
     price_data: {
       currency: "eur",
@@ -33,55 +37,53 @@ export async function createCheckoutSession(items: CheckoutItem[], siteUrl: stri
     quantity: item.quantity,
   }));
 
-  // Réductions pack ebooks
+  // Calcule les réductions pack (en centimes)
   const ebookItems = items.filter((i) => i.type === "ebook");
-  const ebookCount = ebookItems.reduce((sum, i) => sum + i.quantity, 0);
+  const ebookCount = ebookItems.reduce((s, i) => s + i.quantity, 0);
   const ebookDiscountPct = ebookCount >= 3 ? 20 : ebookCount >= 2 ? 10 : 0;
-  if (ebookDiscountPct > 0) {
-    const ebookTotal = ebookItems.reduce((sum, i) => sum + Math.round(i.price * 100) * i.quantity, 0);
-    lineItems.push({
-      price_data: {
-        currency: "eur",
-        product_data: { name: `Réduction pack ebooks (${ebookDiscountPct}%)` },
-        unit_amount: -Math.round(ebookTotal * ebookDiscountPct / 100),
-      },
-      quantity: 1,
-    });
-  }
+  const ebookDiscountCents = ebookDiscountPct > 0
+    ? Math.round(ebookItems.reduce((s, i) => s + Math.round(i.price * 100) * i.quantity, 0) * ebookDiscountPct / 100)
+    : 0;
 
-  // Réductions pack formations
   const formationItems = items.filter((i) => i.type === "formation");
-  const formationCount = formationItems.reduce((sum, i) => sum + i.quantity, 0);
+  const formationCount = formationItems.reduce((s, i) => s + i.quantity, 0);
   const formationDiscountPct = formationCount >= 2 ? 10 : 0;
-  if (formationDiscountPct > 0) {
-    const formationTotal = formationItems.reduce((sum, i) => sum + Math.round(i.price * 100) * i.quantity, 0);
-    lineItems.push({
-      price_data: {
-        currency: "eur",
-        product_data: { name: `Réduction pack formations (${formationDiscountPct}%)` },
-        unit_amount: -Math.round(formationTotal * formationDiscountPct / 100),
-      },
-      quantity: 1,
-    });
-  }
+  const formationDiscountCents = formationDiscountPct > 0
+    ? Math.round(formationItems.reduce((s, i) => s + Math.round(i.price * 100) * i.quantity, 0) * formationDiscountPct / 100)
+    : 0;
 
-  // Code promo (non cumulable avec les packs — vérifié côté serveur avant d'arriver ici)
-  if (promoDiscount) {
-    const subtotal = items.reduce((s, i) => s + Math.round(i.price * 100) * i.quantity, 0);
-    lineItems.push({
-      price_data: {
-        currency: "eur",
-        product_data: { name: `Code promo ${promoDiscount.code} (−${promoDiscount.pct}%)` },
-        unit_amount: -Math.round(subtotal * promoDiscount.pct / 100),
-      },
-      quantity: 1,
+  const totalPackDiscountCents = ebookDiscountCents + formationDiscountCents;
+
+  // Applique les réductions via coupon Stripe (API officielle, pas de unit_amount négatif)
+  let couponId: string | undefined;
+
+  if (totalPackDiscountCents > 0) {
+    // Réduction pack : montant fixe en euros
+    const parts: string[] = [];
+    if (ebookDiscountPct > 0) parts.push(`pack ebooks −${ebookDiscountPct}%`);
+    if (formationDiscountPct > 0) parts.push(`pack formations −${formationDiscountPct}%`);
+    const coupon = await stripe.coupons.create({
+      amount_off: totalPackDiscountCents,
+      currency: "eur",
+      duration: "once",
+      name: `Réduction ${parts.join(" + ")}`,
     });
+    couponId = coupon.id;
+  } else if (promoDiscount) {
+    // Code promo : pourcentage sur le sous-total
+    const coupon = await stripe.coupons.create({
+      percent_off: promoDiscount.pct,
+      duration: "once",
+      name: `Code promo ${promoDiscount.code} (−${promoDiscount.pct}%)`,
+    });
+    couponId = coupon.id;
   }
 
   const session = await stripe.checkout.sessions.create({
     mode: "payment",
     payment_method_types: ["card"],
     line_items: lineItems,
+    ...(couponId ? { discounts: [{ coupon: couponId }] } : {}),
     success_url: `${siteUrl}/succes?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${siteUrl}/panier`,
     billing_address_collection: "auto",
